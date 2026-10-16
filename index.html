@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#5b3fd6">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob: mediastream:; connect-src https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Examora Scanner</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f24;--mut:#667085;--bd:#d9dde3;--pri:#5b3fd6;--prit:#fff;--ok:#12805c;--okbg:#e3f6ee;--bad:#b42318;--badbg:#fdeceb;--warn:#a15c07;--warnbg:#fdf3e1}
+@media (prefers-color-scheme:dark){:root{--bg:#14171c;--card:#1d2128;--tx:#e8eaee;--mut:#9aa3b2;--bd:#323944;--pri:#a08cff;--prit:#0d1117;--ok:#4cc79b;--okbg:#16352a;--bad:#ff8a80;--badbg:#3d1d1b;--warn:#f0b35b;--warnbg:#3a2c14}}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Tahoma,sans-serif}
+.wrap{max-width:560px;margin:0 auto;padding:12px 16px calc(24px + env(safe-area-inset-bottom))}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin:0 0 12px}
+h1{font-size:20px;margin:0}h2{font-size:17px;margin:0 0 8px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sp{flex:1}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,select{width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit}
+button{font:inherit;padding:10px 14px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);cursor:pointer;min-height:44px}
+button.pri{background:var(--pri);color:var(--prit);border-color:var(--pri)}button.sm{padding:6px 10px;min-height:36px;font-size:14px}button:disabled{opacity:.55}
+.full{width:100%;margin-top:14px}.small{font-size:13px;color:var(--mut)}.mono{font-family:ui-monospace,Menlo,Consolas,monospace}.hide{display:none!important}
+.msg{min-height:20px;margin-top:8px;font-size:14px}.msg.err{color:var(--bad)}.msg.ok{color:var(--ok)}
+.item{display:flex;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--bd)}.item:last-child{border-bottom:0}.item .sp{min-width:0}
+.item b{display:block;overflow-wrap:anywhere}
+.counts{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.pill{font-size:13px;padding:3px 10px;border-radius:99px;border:1px solid var(--bd)}
+.cam{position:relative;background:#000;border-radius:12px;overflow:hidden;aspect-ratio:4/3;margin:8px 0}
+.cam video{width:100%;height:100%;object-fit:cover;display:block}.cam .aim{position:absolute;inset:18% 22%;border:3px solid rgba(255,255,255,.85);border-radius:14px}
+.banner{border-radius:12px;padding:12px 14px;margin:8px 0;font-weight:600;font-size:18px;border:1px solid var(--bd)}
+.banner.ok{background:var(--okbg);color:var(--ok)}.banner.warn{background:var(--warnbg);color:var(--warn)}.banner.bad{background:var(--badbg);color:var(--bad)}
+.st{font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--bd);white-space:nowrap}.st.Present{color:var(--ok)}.st.Late{color:var(--warn)}.st.Absent{color:var(--bad)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="row" style="margin-bottom:12px"><img src="icon-192.png" alt="" width="32" height="32" style="border-radius:8px"><h1 class="sp" data-i18n="appName"></h1><button id="langBtn" class="sm"></button><button id="outBtn" class="sm hide" data-i18n="signOut"></button></div>
+
+  <section id="vLogin" class="card">
+    <h2 data-i18n="signInTitle"></h2>
+    <div id="apiW"><label for="api" data-i18n="apiLbl"></label><input id="api" dir="ltr" autocomplete="off" inputmode="url" placeholder="https://script.google.com/macros/s/.../exec"><p class="small" data-i18n="apiHint"></p></div>
+    <div id="apiKnown" class="small hide"><span data-i18n="apiSaved"></span> <button id="apiChange" class="sm" data-i18n="change"></button></div>
+    <label for="em" data-i18n="email"></label><input id="em" type="email" dir="ltr" autocomplete="username">
+    <label for="pin" data-i18n="pin"></label><input id="pin" type="password" inputmode="numeric" dir="ltr" autocomplete="current-password">
+    <button id="goLogin" class="pri full" data-i18n="signIn"></button>
+    <div id="loginMsg" class="msg" role="status"></div>
+  </section>
+
+  <section id="vToday" class="hide">
+    <div class="card"><div class="row"><h2 class="sp" style="margin:0"><span data-i18n="todayTitle"></span> <span id="todayDate" class="mono small"></span></h2><button id="refresh" class="sm" data-i18n="refresh"></button></div>
+      <div id="clsList"></div><div id="todayMsg" class="msg" role="status"></div></div>
+    <div class="card"><h2 data-i18n="startClass"></h2>
+      <label for="ng" data-i18n="group"></label><select id="ng"></select>
+      <label for="nt" data-i18n="classTitle"></label><input id="nt" maxlength="120" data-i18n-ph="classTitlePh">
+      <button id="ngo" class="pri full" data-i18n="start"></button><div id="newMsg" class="msg" role="status"></div></div>
+  </section>
+
+  <section id="vClass" class="hide">
+    <div class="card">
+      <div class="row"><button id="back" class="sm" data-i18n="back"></button><h2 id="cTitle" class="sp" style="margin:0"></h2></div>
+      <div id="cGroup" class="small"></div>
+      <div class="counts" id="cCounts"></div>
+      <div id="pending" class="small hide"></div>
+    </div>
+    <div class="card">
+      <div class="row"><button id="camBtn" class="pri sp"></button><select id="mode" style="width:auto"><option value="Present" data-i18n="present"></option><option value="Late" data-i18n="late"></option></select></div>
+      <div id="camBox" class="cam hide"><video id="video" playsinline muted></video><div class="aim"></div></div>
+      <div id="banner" class="banner hide" role="status"></div>
+      <div id="camMsg" class="msg" role="status"></div>
+    </div>
+    <div class="card">
+      <label for="q" data-i18n="searchLbl" style="margin-top:0"></label>
+      <input id="q" autocomplete="off" data-i18n-ph="searchPh">
+      <div id="hits"></div>
+      <button id="findAll" class="sm hide" data-i18n="findAll" style="margin-top:8px"></button>
+    </div>
+  </section>
+</div>
+<script>
+'use strict';
+var I18N = {
+  en: {
+    appName: 'Examora Scanner', otherLang: 'عربي', signInTitle: 'Staff sign in', apiLbl: 'Examora link', apiHint: 'Open the scanner from the Classes page of the staff portal and this is filled in for you. Otherwise paste the web app link that ends in /exec.',
+    apiSaved: 'Examora link saved.', change: 'Change', email: 'Email', pin: 'PIN', signIn: 'Sign in', signOut: 'Sign out', signingIn: 'Signing in...',
+    todayTitle: "Today's classes", refresh: 'Refresh', noClasses: 'No class today yet. Start one below.', startClass: 'Start a class for today', group: 'Group',
+    classTitle: 'Title', classTitlePh: 'e.g. Lesson 3 review', start: 'Start', back: 'Back', open: 'Open', camOn: 'Scan with the camera', camOff: 'Stop the camera',
+    present: 'Present', late: 'Late', searchLbl: 'Search by name (or type the card code and press Enter)', searchPh: 'Student name', findAll: 'Search all students',
+    noHits: 'No student with this name in the class.', noneAll: 'No student found.', otherGroup: 'from another group', marked: '{n}: {s}.', already: '{n} was already marked ({s}).',
+    pendingLine: '{n} waiting to be sent (no connection). They are sent automatically.', countLine: 'Present {p} | Late {l} | Absent {a} | Not marked {n}', loading: 'Loading...',
+    camNone: 'This phone does not allow the camera here. Use the name search, or open the app in Chrome / Safari.', camDenied: 'Allow the camera for this app, then try again.',
+    'st.Present': 'Present', 'st.Late': 'Late', 'st.Absent': 'Absent', 'st.Excused': 'Excused', 'st.': '-',
+    'err.API_URL': 'Paste the Examora link that ends in /exec.', 'err.NETWORK': 'No connection. Check the internet and try again.', 'err.AUTH_FAILED': 'Wrong email or PIN, or the account is locked for a while.',
+    'err.SESSION_EXPIRED': 'You were signed out. Sign in again.', 'err.FORBIDDEN': 'You do not have the attendance permission.', 'err.BUSY': 'The server is busy. Try again in a moment.',
+    'err.BAD_REQUEST': 'The app needs an update: reload it.', 'err.STUDENT_NOT_FOUND': 'Student not found.', 'err.STUDENT_INACTIVE': 'This student is deactivated.',
+    'err.CLASS_NOT_FOUND': 'Class not found.', 'err.CLASS_EXISTS': 'This group already has a class today.', 'err.GROUP_NOT_FOUND': 'Group not found.', 'err.TITLE_REQUIRED': 'Write a title.',
+    'err.STATUS_INVALID': 'Status is not valid.', 'err.READ_ONLY': 'The subscription ended: the account is read-only.', 'err.ERROR': 'Something went wrong. Please try again.'
+  },
+  ar: {
+    appName: 'ماسح Examora', otherLang: 'English', signInTitle: 'دخول فريق العمل', apiLbl: 'لينك Examora', apiHint: 'افتح الماسح من صفحة الحصص في بوابة المدرس وده هيتملى لوحده. أو الصق لينك تطبيق الويب اللي آخره /exec.',
+    apiSaved: 'لينك Examora محفوظ.', change: 'تغيير', email: 'الإيميل', pin: 'الرقم السري', signIn: 'دخول', signOut: 'خروج', signingIn: 'جاري الدخول...',
+    todayTitle: 'حصص النهارده', refresh: 'تحديث', noClasses: 'مفيش حصة النهارده لسه. ابدأ واحدة تحت.', startClass: 'ابدأ حصة النهارده', group: 'المجموعة',
+    classTitle: 'العنوان', classTitlePh: 'مثلا: مراجعة الدرس 3', start: 'ابدأ', back: 'رجوع', open: 'فتح', camOn: 'امسح بالكاميرا', camOff: 'اقفل الكاميرا',
+    present: 'حاضر', late: 'متأخر', searchLbl: 'ابحث بالاسم (أو اكتب كود الكارت واضغط Enter)', searchPh: 'اسم الطالب', findAll: 'بحث في كل الطلاب',
+    noHits: 'مفيش طالب بالاسم ده في الحصة.', noneAll: 'مفيش طالب بالاسم ده.', otherGroup: 'من مجموعة تانية', marked: '{n}: {s}.', already: '{n} متسجل بالفعل ({s}).',
+    pendingLine: '{n} مستني يتبعت (مفيش نت). هيتبعت لوحده.', countLine: 'حاضر {p} | متأخر {l} | غايب {a} | لسه {n}', loading: 'جاري التحميل...',
+    camNone: 'الموبايل ده مش سامح بالكاميرا هنا. استخدم البحث بالاسم، أو افتح التطبيق من Chrome / Safari.', camDenied: 'اسمح للتطبيق باستخدام الكاميرا وجرب تاني.',
+    'st.Present': 'حاضر', 'st.Late': 'متأخر', 'st.Absent': 'غايب', 'st.Excused': 'بعذر', 'st.': '-',
+    'err.API_URL': 'الصق لينك Examora اللي آخره /exec.', 'err.NETWORK': 'مفيش اتصال. اتأكد من النت وجرب تاني.', 'err.AUTH_FAILED': 'الإيميل أو الرقم السري غلط، أو الحساب مقفول شوية.',
+    'err.SESSION_EXPIRED': 'خرجت من الحساب. ادخل تاني.', 'err.FORBIDDEN': 'معندكش صلاحية الحضور.', 'err.BUSY': 'السيرفر مشغول. جرب كمان شوية.',
+    'err.BAD_REQUEST': 'التطبيق محتاج تحديث: اعمل إعادة تحميل.', 'err.STUDENT_NOT_FOUND': 'الطالب مش موجود.', 'err.STUDENT_INACTIVE': 'الطالب ده متوقف.',
+    'err.CLASS_NOT_FOUND': 'الحصة مش موجودة.', 'err.CLASS_EXISTS': 'المجموعة دي عندها حصة النهارده بالفعل.', 'err.GROUP_NOT_FOUND': 'المجموعة مش موجودة.', 'err.TITLE_REQUIRED': 'اكتب عنوان.',
+    'err.STATUS_INVALID': 'الحالة مش صحيحة.', 'err.READ_ONLY': 'الاشتراك انتهى: الحساب للعرض بس.', 'err.ERROR': 'حصل خطأ. حاول مرة تانية.'
+  }
+};
+var LANG = 'en', TOKEN = null, API = '', CUR = null, CAM = null, LAST = { code: '', at: 0 }, QUEUE = [], BUSY = false;
+var API_RE = /^https:\/\/script\.google\.com\/(?:a\/macros\/[A-Za-z0-9.\-]+|macros)\/s\/[A-Za-z0-9_\-]+\/exec$/;
+function $(id) { return document.getElementById(id); }
+function t(k, p) { var s = (I18N[LANG] && I18N[LANG][k] !== undefined) ? I18N[LANG][k] : (I18N.en[k] !== undefined ? I18N.en[k] : k); return String(s).replace(/\{([a-z]+)\}/g, function (m, n) { return p && p[n] !== undefined ? String(p[n]) : m; }); }
+function el(tag, props, kids) {
+  var e = document.createElement(tag); props = props || {};
+  Object.keys(props).forEach(function (k) { if (k === 'text') e.textContent = props[k]; else if (k === 'cls') e.className = props[k]; else if (k === 'onclick') e.addEventListener('click', props[k]); else e.setAttribute(k, props[k]); });
+  (kids || []).forEach(function (c) { if (c) e.appendChild(c); });
+  return e;
+}
+function say(id, text, kind) { var m = $(id); m.textContent = text || ''; m.className = 'msg' + (kind ? ' ' + kind : ''); }
+function errText(r) { var k = 'err.' + ((r && r.code) || 'ERROR'); return I18N.en[k] !== undefined ? t(k, r && r.params) : t('err.ERROR'); }
+function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function put(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+function sget(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+function sput(k, v) { try { if (v === null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch (e) {} }
+
+function setLang(l, remember) {
+  LANG = l === 'ar' ? 'ar' : 'en'; if (remember) put('exs_lang', LANG);
+  document.documentElement.setAttribute('lang', LANG); document.documentElement.setAttribute('dir', LANG === 'ar' ? 'rtl' : 'ltr');
+  var n = document.querySelectorAll('[data-i18n]'), i; for (i = 0; i < n.length; i++) n[i].textContent = t(n[i].getAttribute('data-i18n'));
+  n = document.querySelectorAll('[data-i18n-ph]'); for (i = 0; i < n.length; i++) n[i].setAttribute('placeholder', t(n[i].getAttribute('data-i18n-ph')));
+  $('langBtn').textContent = t('otherLang'); camLabel(); if (CUR) renderClass();
+}
+$('langBtn').addEventListener('click', function () { setLang(LANG === 'ar' ? 'en' : 'ar', true); });
+
+/** One POST to the Examora web app. text/plain keeps it a "simple" request (no CORS pre-flight). */
+function api(action, data) {
+  var body = Object.assign({ action: action }, data || {}); if (TOKEN && action !== 'login') body.token = TOKEN;
+  return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), redirect: 'follow', credentials: 'omit' })
+    .then(function (r) { return r.json(); })
+    .then(function (r) { r = r || { ok: false, code: 'ERROR' }; if (r.code === 'SESSION_EXPIRED' && action !== 'login') signedOut(t('err.SESSION_EXPIRED')); return r; },
+      function () { return { ok: false, code: 'NETWORK' }; });
+}
+
+function show(v) { ['vLogin', 'vToday', 'vClass'].forEach(function (x) { $(x).classList.toggle('hide', x !== v); }); $('outBtn').classList.toggle('hide', v === 'vLogin'); if (v !== 'vClass') stopCam(); }
+function apiUi() { var known = API_RE.test(API); $('apiW').classList.toggle('hide', known); $('apiKnown').classList.toggle('hide', !known); }
+$('apiChange').addEventListener('click', function () { API = ''; $('api').value = ''; apiUi(); });
+function signedOut(msg) { TOKEN = null; sput('exs_tok', null); CUR = null; show('vLogin'); say('loginMsg', msg || '', msg ? 'err' : ''); $('pin').value = ''; }
+$('goLogin').addEventListener('click', function () {
+  if (!API_RE.test(API)) { var v = $('api').value.trim(); if (!API_RE.test(v)) { say('loginMsg', t('err.API_URL'), 'err'); return; } API = v; put('exs_api', API); apiUi(); }
+  var b = $('goLogin'); b.disabled = true; say('loginMsg', t('signingIn'));
+  api('login', { email: $('em').value.trim(), pin: $('pin').value.trim() }).then(function (r) {
+    b.disabled = false; $('pin').value = '';
+    if (!r.ok || !r.token) { say('loginMsg', errText(r), 'err'); return; }
+    TOKEN = r.token; sput('exs_tok', TOKEN); put('exs_email', $('em').value.trim()); say('loginMsg', ''); loadToday();
+  });
+});
+$('pin').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('goLogin').click(); });
+$('outBtn').addEventListener('click', function () { if (TOKEN) api('logout', {}); signedOut(''); });   // the request is built before the token is cleared
+
+// ---- today's classes ----
+function loadToday() {
+  show('vToday'); say('todayMsg', t('loading'));
+  api('today', {}).then(function (r) {
+    if (!r.ok) { say('todayMsg', errText(r), 'err'); return; }
+    say('todayMsg', ''); $('todayDate').textContent = r.data.date;
+    var box = $('clsList'); box.textContent = '';
+    if (!r.data.classes.length) box.appendChild(el('p', { cls: 'small', text: t('noClasses') }));
+    r.data.classes.forEach(function (c) {
+      var n = c.counts || {};
+      box.appendChild(el('div', { cls: 'item' }, [el('div', { cls: 'sp' }, [el('b', { text: c.title }), el('div', { cls: 'small', text: c.groupName + '  |  ' + t('present') + ' ' + ((n.Present || 0) + (n.Late || 0)) })]),
+        el('button', { cls: 'pri', text: t('open'), onclick: function () { openClass(c.classId); } })]));
+    });
+    var sel = $('ng'); sel.textContent = ''; r.data.groups.forEach(function (g) { sel.appendChild(el('option', { value: g.groupId, text: g.name })); });
+  });
+}
+$('refresh').addEventListener('click', loadToday);
+$('ngo').addEventListener('click', function () {
+  var b = $('ngo'); if (!$('ng').value) return; b.disabled = true; say('newMsg', t('loading'));
+  api('addClass', { groupId: $('ng').value, title: $('nt').value.trim() }).then(function (r) { b.disabled = false; if (!r.ok) { say('newMsg', errText(r), 'err'); return; } say('newMsg', ''); $('nt').value = ''; setClass(r.data); });
+});
+
+// ---- one class ----
+function openClass(id) { say('todayMsg', t('loading')); api('getClass', { classId: id }).then(function (r) { if (!r.ok) { say('todayMsg', errText(r), 'err'); return; } say('todayMsg', ''); setClass(r.data); }); }
+function setClass(c) { CUR = c; $('q').value = ''; $('banner').classList.add('hide'); say('camMsg', ''); show('vClass'); renderClass(); }
+$('back').addEventListener('click', function () { CUR = null; loadToday(); });
+function renderClass() {
+  var c = CUR, n = { Present: 0, Late: 0, Absent: 0, Excused: 0, none: 0 };
+  c.students.forEach(function (s) { n[s.status || 'none'] = (n[s.status || 'none'] || 0) + 1; });
+  $('cTitle').textContent = c.title; $('cGroup').textContent = c.groupName + '  |  ' + c.date;
+  var box = $('cCounts'); box.textContent = '';
+  box.appendChild(el('span', { cls: 'pill', text: t('countLine', { p: n.Present, l: n.Late, a: n.Absent, n: n.none }) }));
+  $('pending').classList.toggle('hide', !QUEUE.length); $('pending').textContent = t('pendingLine', { n: QUEUE.length });
+  renderHits();
+}
+
+/** Same spelling rules as the server: no diacritics, one alef / ya / ta marbuta. */
+function normName(v) {
+  return String(v || '').toLowerCase().replace(/[ً-ْٰـ]/g, '').replace(/[آأإٱ]/g, 'ا')
+    .replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي').replace(/\s+/g, ' ').trim();
+}
+function looksLikeCode(v) { return /[?&]qr=/.test(v) || /^[A-Za-z]{1,3}-[A-Za-z0-9]{4,}$/.test(v); }
+function studentRow(s, extra) {
+  return el('div', { cls: 'item' }, [el('div', { cls: 'sp' }, [el('b', { text: s.name }), el('div', { cls: 'small mono', text: s.studentId + (extra ? '  ' + extra : '') })]),
+    s.status !== undefined ? el('span', { cls: 'st ' + (s.status || ''), text: t('st.' + (s.status || '')) }) : null,
+    el('button', { cls: 'sm pri', text: t('present'), onclick: function () { checkIn(s.studentId, 'search', 'Present'); } }),
+    el('button', { cls: 'sm', text: t('late'), onclick: function () { checkIn(s.studentId, 'search', 'Late'); } })]);
+}
+function renderHits() {
+  var q = normName($('q').value), box = $('hits'); box.textContent = ''; $('findAll').classList.toggle('hide', q.length < 2);
+  if (!q || looksLikeCode($('q').value.trim())) return;
+  var words = q.split(' '), list = CUR.students.filter(function (s) { var nm = normName(s.name); return words.every(function (w) { return nm.indexOf(w) >= 0; }); }).slice(0, 30);
+  if (!list.length) { box.appendChild(el('p', { cls: 'small', text: t('noHits') })); return; }
+  list.forEach(function (s) { box.appendChild(studentRow(s, s.otherGroup ? t('otherGroup') : '')); });
+}
+$('q').addEventListener('input', renderHits);
+$('q').addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter') return;
+  var v = $('q').value.trim(); if (!v) return;
+  if (looksLikeCode(v)) { checkIn(v, 'scan', $('mode').value); $('q').value = ''; renderHits(); return; }
+  var q = normName(v), hits = CUR.students.filter(function (s) { return q.split(' ').every(function (w) { return normName(s.name).indexOf(w) >= 0; }); });
+  if (hits.length === 1) checkIn(hits[0].studentId, 'search', $('mode').value); else $('findAll').click();
+});
+$('findAll').addEventListener('click', function () {
+  var v = $('q').value.trim(), box = $('hits'); if (v.length < 2) return;
+  api('find', { q: v }).then(function (r) {
+    box.textContent = ''; if (!r.ok) { box.appendChild(el('p', { cls: 'small', text: errText(r) })); return; }
+    if (!r.data.length) { box.appendChild(el('p', { cls: 'small', text: t('noneAll') })); return; }
+    r.data.forEach(function (s) { box.appendChild(studentRow({ studentId: s.studentId, name: s.name }, s.groupName)); });
+  });
+});
+
+function banner(text, kind) { var b = $('banner'); b.textContent = text; b.className = 'banner ' + kind; }
+function beep(ok) {
+  try { if (navigator.vibrate) navigator.vibrate(ok ? 80 : [60, 60, 60]); } catch (e) {}
+  try { var A = window.AudioContext || window.webkitAudioContext; if (!A) return; var a = beep.ctx = beep.ctx || new A(), o = a.createOscillator(), g = a.createGain();
+    o.frequency.value = ok ? 880 : 220; g.gain.value = 0.08; o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + (ok ? 0.12 : 0.3)); } catch (e) {}
+}
+/** Marks one student now. Without signal the job waits in QUEUE and is sent again every 10 seconds. */
+function checkIn(code, how, status) {
+  if (!CUR) return;
+  send({ classId: CUR.classId, code: code, how: how, status: status || 'Present' }, false);
+}
+/** Resolves true when the job is finished (saved or refused), false when it must be sent again. */
+function send(job, fromQueue) {
+  return api('checkIn', { classId: job.classId, code: job.code, status: job.status, how: job.how }).then(function (r) {
+    if (!r.ok && r.code === 'NETWORK') {
+      if (!fromQueue) { QUEUE.push(job); banner(t('err.NETWORK'), 'warn'); beep(false); }
+      if (CUR) renderClass();
+      return false;
+    }
+    if (!r.ok) { if (!fromQueue) { banner(errText(r), 'bad'); beep(false); } return true; }
+    var d = r.data, name = d.student.name + (d.otherGroup ? ' (' + t('otherGroup') + ')' : '');
+    if (CUR && CUR.classId === d.cls.classId) CUR = d.cls;
+    if (!fromQueue) { banner(t(d.already ? 'already' : 'marked', { n: name, s: t('st.' + d.status) }), d.already ? 'warn' : 'ok'); beep(!d.already); }
+    if (job.how === 'search' && !fromQueue) $('q').value = '';
+    if (CUR) renderClass();
+    return true;
+  });
+}
+function flushQueue() {
+  if (BUSY || !QUEUE.length || !TOKEN) return;
+  BUSY = true;
+  return send(QUEUE[0], true).then(function (finished) { if (finished) QUEUE.shift(); BUSY = false; if (CUR) renderClass(); });
+}
+setInterval(flushQueue, 10000);
+if (window.addEventListener) window.addEventListener('online', flushQueue);   // send the waiting scans as soon as the signal is back
+
+// ---- camera: BarcodeDetector when the phone has it, jsQR (vendored, same site) otherwise ----
+function camLabel() { $('camBtn').textContent = t(CAM ? 'camOff' : 'camOn'); }
+function loadJsQR(cb) {
+  if (window.jsQR) { cb(); return; }
+  var s = document.createElement('script'); s.src = 'jsQR.js'; s.onload = cb; s.onerror = function () { say('camMsg', t('camNone'), 'err'); stopCam(); }; document.head.appendChild(s);
+}
+function startCam() {
+  say('camMsg', '');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { say('camMsg', t('camNone'), 'err'); return; }
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } }, audio: false }).then(function (stream) {
+    var v = $('video'); v.srcObject = stream; v.play();
+    CAM = { stream: stream, timer: 0, detector: null, canvas: document.createElement('canvas') };
+    $('camBox').classList.remove('hide'); camLabel();
+    var go = function () { CAM.timer = setInterval(scanFrame, 250); };
+    if ('BarcodeDetector' in window) {
+      window.BarcodeDetector.getSupportedFormats().then(function (f) { if (f.indexOf('qr_code') >= 0) { CAM.detector = new window.BarcodeDetector({ formats: ['qr_code'] }); go(); } else loadJsQR(go); }, function () { loadJsQR(go); });
+    } else loadJsQR(go);
+  }, function () { say('camMsg', t('camDenied'), 'err'); });
+}
+function stopCam() {
+  if (!CAM) return;
+  clearInterval(CAM.timer); CAM.stream.getTracks().forEach(function (tr) { tr.stop(); }); $('video').srcObject = null; CAM = null;
+  $('camBox').classList.add('hide'); camLabel();
+}
+$('camBtn').addEventListener('click', function () { if (CAM) stopCam(); else startCam(); });
+var SCANNING = false;
+function scanFrame() {
+  var v = $('video'); if (!CAM || SCANNING || v.readyState < 2) return;
+  SCANNING = true;
+  var done = function (text) { SCANNING = false; if (text) onCode(text); };
+  if (CAM.detector) { CAM.detector.detect(v).then(function (codes) { done(codes && codes[0] ? codes[0].rawValue : ''); }, function () { done(''); }); return; }
+  var w = Math.min(640, v.videoWidth || 640), h = Math.round(w * (v.videoHeight || 480) / (v.videoWidth || 640)), c = CAM.canvas;
+  c.width = w; c.height = h; var g = c.getContext('2d'); g.drawImage(v, 0, 0, w, h);
+  var img = g.getImageData(0, 0, w, h), r = window.jsQR ? window.jsQR(img.data, w, h, { inversionAttempts: 'dontInvert' }) : null;
+  done(r ? r.data : '');
+}
+/** The same card is ignored for 3 seconds so it is not sent twice while it is still in front of the camera. */
+function onCode(text) {
+  var now = Date.now(), code = String(text).trim().slice(0, 300);
+  if (!code || (code === LAST.code && now - LAST.at < 3000)) return;
+  LAST = { code: code, at: now }; checkIn(code, 'scan', $('mode').value);
+}
+
+// ---- start ----
+(function init() {
+  var l = get('exs_lang'); setLang(l || ((navigator.language || '').slice(0, 2) === 'ar' ? 'ar' : 'en'), false);
+  var m = /[?&]api=([^&#]+)/.exec(location.search || ''), fromLink = m ? decodeURIComponent(m[1]) : '';
+  API = API_RE.test(fromLink) ? fromLink : (get('exs_api') || ''); if (!API_RE.test(API)) API = ''; else put('exs_api', API);
+  if (fromLink && history.replaceState) history.replaceState(null, '', location.pathname);
+  $('em').value = get('exs_email') || ''; apiUi();
+  TOKEN = sget('exs_tok');
+  if (TOKEN && API) api('ping', {}).then(function (r) { if (r.ok) loadToday(); else signedOut(''); }); else show('vLogin');
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+})();
+</script>
+</body>
+</html>
