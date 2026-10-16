@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Examora</title>
+</head>
+<body>
+<!-- Old address (Config.APP_BASE_URL may still point here): sends the visit to the student app, which passes staff links on to teacher/. -->
+<script>
+location.replace('student/' + (location.search || ''));
+</script>
+<noscript><a href="student/">Examora</a></noscript>
+</body>
+</html>
