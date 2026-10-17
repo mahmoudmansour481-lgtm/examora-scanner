@@ -45,6 +45,29 @@ function shellRoute(role, exec, search) {
   return { src: exec + shellQuery(p) };
 }
 
+/**
+ * Phone fit (Delivery M). Some Android phones (seen on Honor 200) open the installed app at a desktop layout width (~980 px)
+ * and shrink it: tiny login, then Chrome zooms in on the PIN box. When this page is laid out much wider than the phone screen,
+ * the frame is given the real phone width and scaled up to fill the screen, so Examora inside is laid out at phone width.
+ * Returns the scale used (1 = nothing to fix).
+ */
+function shellFitScale(layoutW, screenW, touch) {
+  layoutW = Number(layoutW) || 0; screenW = Number(screenW) || 0;
+  if (!touch || !screenW || screenW >= 900 || layoutW <= screenW * 1.2) return 1;
+  return layoutW / screenW;
+}
+function shellFit(f) {
+  var nav = (typeof navigator !== 'undefined' && navigator) || {}, scr = (typeof screen !== 'undefined' && screen) || {};
+  var touch = ('ontouchstart' in window) || (nav.maxTouchPoints || 0) > 0;
+  var z = shellFitScale(window.innerWidth, scr.width, touch), st = f.style;
+  if (!st) return z;
+  if (z === 1) { st.position = ''; st.width = ''; st.height = ''; st.transform = ''; st.transformOrigin = ''; return 1; }
+  st.position = 'absolute'; st.left = '0'; st.top = '0';
+  st.width = Math.round(window.innerWidth / z) + 'px'; st.height = Math.round(window.innerHeight / z) + 'px';
+  st.transformOrigin = '0 0'; st.transform = 'scale(' + z + ')';
+  return z;
+}
+
 function bar(cls, text, buttons) {
   var b = document.createElement('div'); b.className = 'bar ' + cls;
   var s = document.createElement('span'); s.textContent = text; b.appendChild(s);
@@ -65,6 +88,8 @@ function examoraShell(role) {
   var f = document.createElement('iframe');
   f.src = r.src; f.setAttribute('title', 'Examora'); f.setAttribute('allow', 'clipboard-write; camera; microphone; fullscreen');
   document.body.appendChild(f); st.frame = f;
+  st.fit = shellFit(f); window.addEventListener('resize', function () { st.fit = shellFit(f); });
+  window.addEventListener('orientationchange', function () { setTimeout(function () { st.fit = shellFit(f); }, 300); });
 
   if (nav.serviceWorker && nav.serviceWorker.register) { try { nav.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
 
