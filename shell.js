@@ -45,6 +45,15 @@ function shellRoute(role, exec, search) {
   return { src: exec + shellQuery(p) };
 }
 
+/** O: the frame link after a refresh: same Examora link + the page's one-time code (h) and language; never another site. */
+function shellReloadSrc(role, src, params) {
+  var p = shellParams(String(src || '').replace(/^[^?]*/, '')), q = params && typeof params === 'object' ? params : {};
+  if (typeof q.h === 'string' && /^[0-9a-f]{32}$/.test(q.h)) p.h = q.h; else delete p.h;
+  if (q.lang === 'ar' || q.lang === 'en') p.lang = q.lang;
+  if (role === 'teacher') p.portal = 'staff'; else if (q.portal === 'staff') p.portal = 'staff'; else delete p.portal;
+  return String(src || '').replace(/\?.*$/, '') + shellQuery(p);
+}
+
 /**
  * Phone fit (Delivery M). Some Android phones (seen on Honor 200) open the installed app at a desktop layout width (~980 px)
  * and shrink it: tiny login, then Chrome zooms in on the PIN box. When this page is laid out much wider than the phone screen,
@@ -90,6 +99,15 @@ function examoraShell(role) {
   document.body.appendChild(f); st.frame = f;
   st.fit = shellFit(f); window.addEventListener('resize', function () { st.fit = shellFit(f); });
   window.addEventListener('orientationchange', function () { setTimeout(function () { st.fit = shellFit(f); }, 300); });
+
+  // O: refresh button / "new update" bar inside Examora: reload the frame with the one-time code it sends (keeps the session)
+  window.addEventListener('message', function (e) {
+    var d = e && e.data;
+    if (!d || d.examora !== 'reload' || !/^https:\/\/[a-z0-9\-]+\.googleusercontent\.com$/.test(String(e.origin || ''))) return;
+    try { e.source.postMessage({ examora: 'reloading' }, e.origin); } catch (x) { }
+    st.reloadTo = shellReloadSrc(role, r.src, d.params);
+    f.src = st.reloadTo;
+  });
 
   if (nav.serviceWorker && nav.serviceWorker.register) { try { nav.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
 

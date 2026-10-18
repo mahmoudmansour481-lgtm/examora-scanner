@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
+<script data-fit>/* phone fit (O): same as the Examora pages - when this page is laid out far wider than the phone screen (seen on Honor phones inside a Custom Tab), zoom it so it fits at phone width */
+(function () { function fit() { try { var d = document.documentElement, w = window.innerWidth, s = screen.width || w, touch = ('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0;
+  var z = (touch && s < 900 && w > s * 1.2) ? w / s : 1; d.style.zoom = z > 1 ? String(Math.round(z * 1000) / 1000) : ''; d.setAttribute('data-fit', String(Math.round(z * 100) / 100)); } catch (e) {} }
+  fit(); window.addEventListener('resize', fit); window.addEventListener('orientationchange', function () { setTimeout(fit, 300); }); })();</script>
+<style>html{-webkit-text-size-adjust:100%;text-size-adjust:100%;overflow-x:hidden}body{overflow-x:hidden}@media (max-width:820px),(pointer:coarse){input,select,textarea{font-size:16px!important}}</style>
 <title>Examora</title>
 </head>
 <body>

@@ -9,6 +9,11 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
+<script data-fit>/* phone fit (O): same as the Examora pages - when this page is laid out far wider than the phone screen (seen on Honor phones inside a Custom Tab), zoom it so it fits at phone width */
+(function () { function fit() { try { var d = document.documentElement, w = window.innerWidth, s = screen.width || w, touch = ('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0;
+  var z = (touch && s < 900 && w > s * 1.2) ? w / s : 1; d.style.zoom = z > 1 ? String(Math.round(z * 1000) / 1000) : ''; d.setAttribute('data-fit', String(Math.round(z * 100) / 100)); } catch (e) {} }
+  fit(); window.addEventListener('resize', fit); window.addEventListener('orientationchange', function () { setTimeout(fit, 300); }); })();</script>
+<style>html{-webkit-text-size-adjust:100%;text-size-adjust:100%;overflow-x:hidden}body{overflow-x:hidden}@media (max-width:820px),(pointer:coarse){input,select,textarea{font-size:16px!important}}</style>
 <title>Examora Scanner</title>
 <style>
 :root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f24;--mut:#667085;--bd:#d9dde3;--pri:#5b3fd6;--prit:#fff;--ok:#12805c;--okbg:#e3f6ee;--bad:#b42318;--badbg:#fdeceb;--warn:#a15c07;--warnbg:#fdf3e1}
@@ -36,7 +41,7 @@ button.pri{background:var(--pri);color:var(--prit);border-color:var(--pri)}butto
 </head>
 <body>
 <div class="wrap">
-  <div class="row" style="margin-bottom:12px"><img src="icon-192.png" alt="" width="32" height="32" style="border-radius:8px"><h1 class="sp" data-i18n="appName"></h1><button id="langBtn" class="sm"></button><button id="outBtn" class="sm hide" data-i18n="signOut"></button></div>
+  <div class="row" style="margin-bottom:12px"><img src="icon-192.png" alt="" width="32" height="32" style="border-radius:8px"><h1 class="sp" data-i18n="appName"></h1><button id="reloadBtn" class="sm" data-i18n="reload"></button><button id="langBtn" class="sm"></button><button id="outBtn" class="sm hide" data-i18n="signOut"></button></div>
 
   <section id="vLogin" class="card">
     <h2 data-i18n="signInTitle"></h2>
@@ -44,6 +49,7 @@ button.pri{background:var(--pri);color:var(--prit);border-color:var(--pri)}butto
     <div id="apiKnown" class="small hide"><span data-i18n="apiSaved"></span> <button id="apiChange" class="sm" data-i18n="change"></button></div>
     <label for="em" data-i18n="email"></label><input id="em" type="email" dir="ltr" autocomplete="username">
     <label for="pin" data-i18n="pin"></label><input id="pin" type="password" inputmode="numeric" dir="ltr" autocomplete="current-password">
+    <label class="chk" style="display:flex;gap:8px;align-items:center;color:var(--tx);font-size:15px;margin-top:12px"><input id="rem" type="checkbox" checked style="width:22px;height:22px"><span data-i18n="remember"></span></label>
     <button id="goLogin" class="pri full" data-i18n="signIn"></button>
     <div id="loginMsg" class="msg" role="status"></div>
   </section>
@@ -82,7 +88,7 @@ button.pri{background:var(--pri);color:var(--prit);border-color:var(--pri)}butto
 'use strict';
 var I18N = {
   en: {
-    appName: 'Examora Scanner', otherLang: 'عربي', signInTitle: 'Staff sign in', apiLbl: 'Examora link', apiHint: 'Open the scanner from the Classes page of the staff portal and this is filled in for you. Otherwise paste the web app link that ends in /exec.',
+    appName: 'Examora Scanner', otherLang: 'عربي', remember: 'Remember me on this phone', reload: 'Reload', resuming: 'Signing you in...', signInTitle: 'Staff sign in', apiLbl: 'Examora link', apiHint: 'Open the scanner from the Classes page of the staff portal and this is filled in for you. Otherwise paste the web app link that ends in /exec.',
     apiSaved: 'Examora link saved.', change: 'Change', email: 'Email', pin: 'PIN', signIn: 'Sign in', signOut: 'Sign out', signingIn: 'Signing in...',
     todayTitle: "Today's classes", refresh: 'Refresh', noClasses: 'No class today yet. Start one below.', startClass: 'Start a class for today', group: 'Group',
     classTitle: 'Title', classTitlePh: 'e.g. Lesson 3 review', start: 'Start', back: 'Back', open: 'Open', camOn: 'Scan with the camera', camOff: 'Stop the camera',
@@ -98,7 +104,7 @@ var I18N = {
     'err.STATUS_INVALID': 'Status is not valid.', 'err.READ_ONLY': 'The subscription ended: the account is read-only.', 'err.ERROR': 'Something went wrong. Please try again.'
   },
   ar: {
-    appName: 'ماسح Examora', otherLang: 'English', signInTitle: 'دخول فريق العمل', apiLbl: 'لينك Examora', apiHint: 'افتح الماسح من صفحة الحصص في بوابة المدرس وده هيتملى لوحده. أو الصق لينك تطبيق الويب اللي آخره /exec.',
+    appName: 'ماسح Examora', otherLang: 'English', remember: 'افتكرني على الموبايل ده', reload: 'تحديث', resuming: 'جاري الدخول...', signInTitle: 'دخول فريق العمل', apiLbl: 'لينك Examora', apiHint: 'افتح الماسح من صفحة الحصص في بوابة المدرس وده هيتملى لوحده. أو الصق لينك تطبيق الويب اللي آخره /exec.',
     apiSaved: 'لينك Examora محفوظ.', change: 'تغيير', email: 'الإيميل', pin: 'الرقم السري', signIn: 'دخول', signOut: 'خروج', signingIn: 'جاري الدخول...',
     todayTitle: 'حصص النهارده', refresh: 'تحديث', noClasses: 'مفيش حصة النهارده لسه. ابدأ واحدة تحت.', startClass: 'ابدأ حصة النهارده', group: 'المجموعة',
     classTitle: 'العنوان', classTitlePh: 'مثلا: مراجعة الدرس 3', start: 'ابدأ', back: 'رجوع', open: 'فتح', camOn: 'امسح بالكاميرا', camOff: 'اقفل الكاميرا',
@@ -114,7 +120,7 @@ var I18N = {
     'err.STATUS_INVALID': 'الحالة مش صحيحة.', 'err.READ_ONLY': 'الاشتراك انتهى: الحساب للعرض بس.', 'err.ERROR': 'حصل خطأ. حاول مرة تانية.'
   }
 };
-var LANG = 'en', TOKEN = null, API = '', CUR = null, CAM = null, LAST = { code: '', at: 0 }, QUEUE = [], BUSY = false;
+var LANG = 'en', TOKEN = null, DEV = null, RESUMING = null, API = '', CUR = null, CAM = null, LAST = { code: '', at: 0 }, QUEUE = [], BUSY = false;
 var API_RE = /^https:\/\/script\.google\.com\/(?:a\/macros\/[A-Za-z0-9.\-]+|macros)\/s\/[A-Za-z0-9_\-]+\/exec$/;
 function $(id) { return document.getElementById(id); }
 function t(k, p) { var s = (I18N[LANG] && I18N[LANG][k] !== undefined) ? I18N[LANG][k] : (I18N.en[k] !== undefined ? I18N.en[k] : k); return String(s).replace(/\{([a-z]+)\}/g, function (m, n) { return p && p[n] !== undefined ? String(p[n]) : m; }); }
@@ -142,11 +148,29 @@ $('langBtn').addEventListener('click', function () { setLang(LANG === 'ar' ? 'en
 
 /** One POST to the Examora web app. text/plain keeps it a "simple" request (no CORS pre-flight). */
 function api(action, data) {
-  var body = Object.assign({ action: action }, data || {}); if (TOKEN && action !== 'login') body.token = TOKEN;
+  var body = Object.assign({ action: action }, data || {}); delete body.__again; if (TOKEN && ['login', 'resume', 'handoff'].indexOf(action) < 0) body.token = TOKEN;
   return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), redirect: 'follow', credentials: 'omit' })
     .then(function (r) { return r.json(); })
-    .then(function (r) { r = r || { ok: false, code: 'ERROR' }; if (r.code === 'SESSION_EXPIRED' && action !== 'login') signedOut(t('err.SESSION_EXPIRED')); return r; },
-      function () { return { ok: false, code: 'NETWORK' }; });
+    .then(function (r) {
+      r = r || { ok: false, code: 'ERROR' };
+      if (r.code === 'SESSION_EXPIRED' && ['login', 'resume', 'handoff', 'logout'].indexOf(action) < 0) {
+        if (DEV && !(data || {}).__again) return resume().then(function (ok) { if (ok) return api(action, Object.assign({}, data || {}, { __again: true })); signedOut(t('err.SESSION_EXPIRED')); return r; });
+        signedOut(t('err.SESSION_EXPIRED'));
+      }
+      return r;
+    }, function () { return { ok: false, code: 'NETWORK' }; });
+}
+/** O: remember me. The device token (only its hash is on the server) is swapped for a fresh session; one request at a time. */
+function resume() {
+  if (!DEV) return Promise.resolve(false);
+  if (RESUMING) return RESUMING;
+  RESUMING = api('resume', { device: DEV }).then(function (r) {
+    RESUMING = null;
+    if (r.ok && r.token) { TOKEN = r.token; sput('exs_tok', TOKEN); return true; }
+    if (r.code === 'SESSION_EXPIRED') { DEV = null; put('exs_dev', null); }
+    return false;
+  });
+  return RESUMING;
 }
 
 function show(v) { ['vLogin', 'vToday', 'vClass'].forEach(function (x) { $(x).classList.toggle('hide', x !== v); }); $('outBtn').classList.toggle('hide', v === 'vLogin'); if (v !== 'vClass') stopCam(); }
@@ -156,14 +180,15 @@ function signedOut(msg) { TOKEN = null; sput('exs_tok', null); CUR = null; show(
 $('goLogin').addEventListener('click', function () {
   if (!API_RE.test(API)) { var v = $('api').value.trim(); if (!API_RE.test(v)) { say('loginMsg', t('err.API_URL'), 'err'); return; } API = v; put('exs_api', API); apiUi(); }
   var b = $('goLogin'); b.disabled = true; say('loginMsg', t('signingIn'));
-  api('login', { email: $('em').value.trim(), pin: $('pin').value.trim() }).then(function (r) {
+  api('login', { email: $('em').value.trim(), pin: $('pin').value.trim(), remember: $('rem').checked, ua: String(navigator.userAgent || '').slice(0, 200) }).then(function (r) {
     b.disabled = false; $('pin').value = '';
     if (!r.ok || !r.token) { say('loginMsg', errText(r), 'err'); return; }
-    TOKEN = r.token; sput('exs_tok', TOKEN); put('exs_email', $('em').value.trim()); say('loginMsg', ''); loadToday();
+    TOKEN = r.token; sput('exs_tok', TOKEN); DEV = r.device || null; put('exs_dev', DEV); put('exs_email', $('em').value.trim()); say('loginMsg', ''); loadToday();
   });
 });
 $('pin').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('goLogin').click(); });
-$('outBtn').addEventListener('click', function () { if (TOKEN) api('logout', {}); signedOut(''); });   // the request is built before the token is cleared
+$('outBtn').addEventListener('click', function () { if (TOKEN || DEV) api('logout', { device: DEV || '' }); DEV = null; put('exs_dev', null); signedOut(''); });
+$('reloadBtn').addEventListener('click', function () { location.reload(); });   // a new version of the app; the session comes back from remember me   // the request is built before the token is cleared
 
 // ---- today's classes ----
 function loadToday() {
@@ -321,10 +346,22 @@ function onCode(text) {
   var l = get('exs_lang'); setLang(l || ((navigator.language || '').slice(0, 2) === 'ar' ? 'ar' : 'en'), false);
   var m = /[?&]api=([^&#]+)/.exec(location.search || ''), fromLink = m ? decodeURIComponent(m[1]) : '';
   API = API_RE.test(fromLink) ? fromLink : (get('exs_api') || ''); if (!API_RE.test(API)) API = ''; else put('exs_api', API);
-  if (fromLink && history.replaceState) history.replaceState(null, '', location.pathname);
   $('em').value = get('exs_email') || ''; apiUi();
-  TOKEN = sget('exs_tok');
-  if (TOKEN && API) api('ping', {}).then(function (r) { if (r.ok) loadToday(); else signedOut(''); }); else show('vLogin');
+  var hm = /[?&]h=([0-9a-f]{32})(?:&|#|$)/.exec(location.search || ''), hand = hm ? hm[1] : '';
+  if ((fromLink || hand) && history.replaceState) history.replaceState(null, '', location.pathname);
+  TOKEN = sget('exs_tok'); DEV = get('exs_dev'); if (DEV && !/^[0-9a-f]{64}$/.test(DEV)) DEV = null;
+  function start() {
+    if (!API) { show('vLogin'); return; }
+    if (TOKEN) { api('ping', {}).then(function (r) { if (r.ok) loadToday(); else { TOKEN = null; sput('exs_tok', null); start(); } }); return; }
+    if (DEV) { show('vLogin'); say('loginMsg', t('resuming')); resume().then(function (ok) { if (ok) { say('loginMsg', ''); loadToday(); } else { DEV = null; start(); } }); return; }
+    if (hand) {        // opened from the teacher app: the app handed over a sign-in (one time, 10 minutes) -> remembered on this phone
+      var code = hand; hand = ''; show('vLogin'); say('loginMsg', t('resuming'));
+      api('handoff', { code: code }).then(function (r) { if (r.ok && r.device) { DEV = r.device; put('exs_dev', DEV); start(); } else { say('loginMsg', ''); show('vLogin'); } });
+      return;
+    }
+    show('vLogin');
+  }
+  start();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
 })();
 </script>
