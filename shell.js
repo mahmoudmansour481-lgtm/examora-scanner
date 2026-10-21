@@ -6,13 +6,15 @@ var I18N = {
     noLink: 'Examora: put your /exec link in config.js (line EXAMORA_EXEC).',
     offline: 'No internet connection. Examora will reload when you are back online.',
     install: 'Install the app', installTeacher: 'Install Examora Teacher on this device', installStudent: 'Install Examora on this device',
-    iosHint: 'To install: tap Share, then Add to Home Screen.', close: 'Close'
+    iosHint: 'To install: tap Share, then Add to Home Screen.', close: 'Close',
+    pushAsk: 'Get a notification on this phone when a new message or announcement arrives?', pushOn: 'Turn on', pushDenied: 'Notifications are blocked for this app in the phone settings.'
   },
   ar: {
     noLink: 'Examora: حط رابط /exec بتاعك في config.js (سطر EXAMORA_EXEC).',
     offline: 'مفيش اتصال بالإنترنت. Examora هيفتح تاني أول ما النت يرجع.',
     install: 'ثبّت التطبيق', installTeacher: 'ثبّت تطبيق Examora للمدرس على الجهاز ده', installStudent: 'ثبّت تطبيق Examora على الجهاز ده',
-    iosHint: 'للتثبيت: دوس على زر المشاركة وبعدين Add to Home Screen.', close: 'إغلاق'
+    iosHint: 'للتثبيت: دوس على زر المشاركة وبعدين Add to Home Screen.', close: 'إغلاق',
+    pushAsk: 'عايز إشعار على الموبايل ده لما توصلك رسالة أو إعلان جديد؟', pushOn: 'شغّل الإشعارات', pushDenied: 'الإشعارات مقفولة للتطبيق ده من إعدادات الموبايل.'
   }
 };
 var EXEC_RE = /^https:\/\/script\.google\.com\/(?:a\/macros\/[A-Za-z0-9.\-]+|macros)\/s\/[A-Za-z0-9_\-]+\/exec$/;
@@ -77,6 +79,17 @@ function shellFit(f) {
   return z;
 }
 
+/** P8: base64url (the server's public key) -> bytes for pushManager.subscribe. */
+function pushKeyBytes(b64) {
+  var s = String(b64 || '').replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '=';
+  var bin = atob(s), out = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out;
+}
+/** P8: where the service worker finds this device's notification id (it cannot read localStorage). */
+function pushStoreName(role) { return 'exm-push-' + role; }
+function pushSave(role, o) { try { return caches.open(pushStoreName(role)).then(function (c) { return o ? c.put('push-id', new Response(JSON.stringify(o))) : c.delete('push-id'); }); } catch (e) { return Promise.resolve(); } }
+function pushLoad(role) { try { return caches.open(pushStoreName(role)).then(function (c) { return c.match('push-id'); }).then(function (r) { return r ? r.json() : null; }).catch(function () { return null; }); } catch (e) { return Promise.resolve(null); } }
+function pushPost(body) { return fetch(EXAMORA_EXEC, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }); }
+
 function bar(cls, text, buttons) {
   var b = document.createElement('div'); b.className = 'bar ' + cls;
   var s = document.createElement('span'); s.textContent = text; b.appendChild(s);
@@ -110,6 +123,35 @@ function examoraShell(role) {
   });
 
   if (nav.serviceWorker && nav.serviceWorker.register) { try { nav.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
+
+  // P8: phone notifications. Examora (inside the frame) sends a one-time offer after sign-in; the permission is asked with OUR button.
+  var PKEY = 'exm_push_hide_' + role, pushOffer = null;
+  st.bars.push = bar('hide', t('pushAsk'), [[t('pushOn'), function () {
+    hide(st.bars.push); var o = pushOffer; if (!o) return;
+    try { Notification.requestPermission().then(function (p) { if (p === 'granted') pushSubscribe(o); else if (p === 'denied') { st.bars.pushNo = st.bars.pushNo || bar('', t('pushDenied'), [[t('close'), function () { hide(st.bars.pushNo); }]]); } }); } catch (e) { }
+  }, 'main'], [t('close'), function () { hide(st.bars.push); try { localStorage.setItem(PKEY, '1'); } catch (e) { } }]]);
+  function pushSubscribe(o) {
+    return nav.serviceWorker.ready.then(function (reg) {
+      var key = pushKeyBytes(o.key), sub = function () { return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }); };
+      return reg.pushManager.getSubscription().then(function (old) { return old ? sub().catch(function () { return old.unsubscribe().then(sub); }) : sub(); });
+    }).then(function (s) { return pushPost({ action: 'pushSubscribe', code: o.code, endpoint: s.endpoint, lang: o.lang === 'ar' ? 'ar' : LANG }); })
+      .then(function (j) { if (j && j.ok) { st.push = 'on'; return pushSave(role, { sub: j.data.sub, key: j.data.key, api: EXAMORA_EXEC, lang: o.lang === 'ar' ? 'ar' : LANG }); } })
+      .catch(function () { st.push = 'failed'; });
+  }
+  window.addEventListener('message', function (e) {
+    var d = e && e.data;
+    if (!d || (d.examora !== 'push' && d.examora !== 'push-off') || !/^https:\/\/[a-z0-9\-]+\.googleusercontent\.com$/.test(String(e.origin || ''))) return;
+    if (d.examora === 'push-off') { pushLoad(role).then(function (id) { if (id) { pushPost({ action: 'pushOff', sub: id.sub, key: id.key }).catch(function () {}); pushSave(role, null); } }); return; }
+    if (typeof d.key !== 'string' || !/^[0-9a-f]{32}$/.test(String(d.code || ''))) return;
+    if (!nav.serviceWorker || typeof window.PushManager === 'undefined' || typeof Notification === 'undefined') { st.push = 'unsupported'; return; }
+    var ios = /iphone|ipad|ipod/i.test(String(nav.userAgent || '')), alone = false; try { alone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || nav.standalone === true; } catch (x) { }
+    if (ios && !alone) { st.push = 'install-first'; return; }            // iPhone: notifications only in the installed app
+    pushOffer = { key: d.key, code: d.code, lang: d.lang };
+    if (Notification.permission === 'granted') { pushSubscribe(pushOffer); return; }   // the device follows whoever signed in
+    if (Notification.permission === 'denied') { st.push = 'denied'; return; }
+    var hidden = false; try { hidden = localStorage.getItem(PKEY) === '1'; } catch (x) { }
+    if (!hidden) show(st.bars.push);
+  });
 
   // offline notice; the frame reloads once the connection is back
   st.bars.offline = bar('warn hide', t('offline')); var wasOff = false;
