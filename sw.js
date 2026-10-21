@@ -1,7 +1,7 @@
 // Examora Scanner service worker: keeps the app files on the phone so it opens instantly (and without signal).
 // Only GET requests of this site are cached; the Examora API (a POST to script.google.com) always goes to the network.
-var CACHE = 'examora-scanner-v3';
-var FILES = ['./', './index.html', './jsQR.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+var CACHE = 'examora-scanner-v4';
+var FILES = ['./', './index.html', './jsQR.js', './manifest.webmanifest', './icon-v2-192.png', './icon-v2-512.png'];
 self.addEventListener('install', function (e) { e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); }).then(function () { return self.skipWaiting(); })); });
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (keys) { return Promise.all(keys.filter(function (k) { return k.indexOf('examora-scanner-') === 0 && k !== CACHE; }).map(function (k) { return caches.delete(k); })); }).then(function () { return self.clients.claim(); }));

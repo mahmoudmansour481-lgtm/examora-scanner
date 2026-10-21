@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#5b3fd6">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' blob: mediastream:; connect-src https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest?v=2">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-v2-192.png">
+<link rel="apple-touch-icon" href="icon-v2-192.png">
 <script data-fit>/* phone fit (O): same as the Examora pages - when this page is laid out far wider than the phone screen (seen on Honor phones inside a Custom Tab), zoom it so it fits at phone width */
 (function () { function fit() { try { var d = document.documentElement, w = window.innerWidth, s = screen.width || w, touch = ('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0;
   var z = (touch && s < 900 && w > s * 1.2) ? w / s : 1; d.style.zoom = z > 1 ? String(Math.round(z * 1000) / 1000) : ''; d.setAttribute('data-fit', String(Math.round(z * 100) / 100)); } catch (e) {} }
@@ -41,7 +41,7 @@ button.pri{background:var(--pri);color:var(--prit);border-color:var(--pri)}butto
 </head>
 <body>
 <div class="wrap">
-  <div class="row" style="margin-bottom:12px"><img src="icon-192.png" alt="" width="32" height="32" style="border-radius:8px"><h1 class="sp" data-i18n="appName"></h1><button id="reloadBtn" class="sm" data-i18n="reload"></button><button id="langBtn" class="sm"></button><button id="outBtn" class="sm hide" data-i18n="signOut"></button></div>
+  <div class="row" style="margin-bottom:12px"><img src="icon-v2-192.png" alt="" width="32" height="32" style="border-radius:8px"><h1 class="sp" data-i18n="appName"></h1><button id="reloadBtn" class="sm" data-i18n="reload"></button><button id="langBtn" class="sm"></button><button id="outBtn" class="sm hide" data-i18n="signOut"></button></div>
 
   <section id="vLogin" class="card">
     <h2 data-i18n="signInTitle"></h2>
