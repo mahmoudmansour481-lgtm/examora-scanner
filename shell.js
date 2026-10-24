@@ -105,6 +105,31 @@ function bar(cls, text, buttons) {
 function hide(el) { if (el) el.classList.add('hide'); }
 function show(el) { if (el) el.classList.remove('hide'); }
 
+/** R7: open the connections to Google while the page is still starting (saves a few hundred ms on a phone). */
+function shellPreconnect() {
+  ['https://script.google.com', 'https://script.googleusercontent.com', 'https://fonts.googleapis.com', 'https://fonts.gstatic.com'].forEach(function (h) {
+    try { var l = document.createElement('link'); l.rel = 'preconnect'; l.href = h; if (/gstatic/.test(h)) l.crossOrigin = ''; document.head.appendChild(l); } catch (e) { }
+  });
+}
+/** R7: splash (brand mark + three breathing bars) over the frame until Examora says it is ready. */
+function shellSplash() {
+  try {
+    var css = document.createElement('style');
+    css.textContent = '#exmSplash{position:fixed;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:#f4f1ea;transition:opacity .45s ease,visibility 0s .45s}' +
+      '#exmSplash.off{opacity:0;visibility:hidden}#exmSplash b{font:600 22px/1 system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;color:#0f4f47;letter-spacing:.02em}' +
+      '#exmSplash .mk{display:flex;gap:6px;align-items:flex-end;height:34px}#exmSplash .mk i{width:8px;border-radius:4px;background:#0f4f47;animation:exS 1s cubic-bezier(.2,.7,.2,1) infinite}' +
+      '#exmSplash .mk i:nth-child(1){height:18px}#exmSplash .mk i:nth-child(2){height:30px;background:#e3a13a;animation-delay:.12s}#exmSplash .mk i:nth-child(3){height:22px;animation-delay:.24s}' +
+      '@keyframes exS{0%,100%{transform:scaleY(.45);opacity:.6}50%{transform:scaleY(1);opacity:1}}' +
+      '@media (prefers-color-scheme:dark){#exmSplash{background:#0e1312}#exmSplash b{color:#e9ece6}#exmSplash .mk i{background:#5fc2b2}#exmSplash .mk i:nth-child(2){background:#f0b75a}}';
+    document.head.appendChild(css);
+    var d = document.createElement('div'); d.id = 'exmSplash'; d.setAttribute('role', 'status');
+    var mk = document.createElement('div'); mk.className = 'mk'; for (var i = 0; i < 3; i++) mk.appendChild(document.createElement('i'));
+    var b = document.createElement('b'); b.textContent = 'Examora';
+    d.appendChild(mk); d.appendChild(b); document.body.appendChild(d); return d;
+  } catch (e) { return null; }
+}
+function shellSplashOff(d) { if (d && !d.classList.contains('off')) { d.classList.add('off'); setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 600); } }
+
 function examoraShell(role) {
   var p0 = shellParams(location.search), nav = (typeof navigator !== 'undefined' && navigator) || {};
   LANG = p0.lang === 'ar' || p0.lang === 'en' ? p0.lang : (/^ar/i.test(String(nav.language || '')) ? 'ar' : 'en');
@@ -113,7 +138,14 @@ function examoraShell(role) {
   if (r.error) { var m = document.createElement('p'); m.className = 'msg'; m.textContent = t('noLink'); document.body.appendChild(m); return st; }
   if (r.redirect) { location.replace(r.redirect); return st; }
 
+  shellPreconnect();
+  var splash = shellSplash();                                             // R7: our own splash instead of a white page while Google starts Examora
   var f = document.createElement('iframe');
+  f.addEventListener('load', function () { setTimeout(function () { shellSplashOff(splash); }, 9000); });
+  setTimeout(function () { shellSplashOff(splash); }, 30000);
+  window.addEventListener('message', function (e) {
+    if (e && e.data && e.data.examora === 'ready' && /^https:\/\/[a-z0-9\-]+\.googleusercontent\.com$/.test(String(e.origin || ''))) shellSplashOff(splash);
+  });
   f.src = r.src; f.setAttribute('title', 'Examora'); f.setAttribute('allow', 'clipboard-write; camera; microphone; fullscreen');
   document.body.appendChild(f); st.frame = f;
   st.fit = shellFit(f); window.addEventListener('resize', function () { st.fit = shellFit(f); });
