@@ -90,6 +90,12 @@ function pushSave(role, o) { try { return caches.open(pushStoreName(role)).then(
 function pushLoad(role) { try { return caches.open(pushStoreName(role)).then(function (c) { return c.match('push-id'); }).then(function (r) { return r ? r.json() : null; }).catch(function () { return null; }); } catch (e) { return Promise.resolve(null); } }
 function pushPost(body) { return fetch(EXAMORA_EXEC, { method: 'POST', body: JSON.stringify(body) }).then(function (r) { return r.json(); }); }
 
+/** Q: the message comes from Google's page inside OUR frame (Apps Script nests it one level down), not from any other frame. */
+function shellKeepFrom(e, frame) {
+  if (!/^https:\/\/[a-z0-9\-]+\.googleusercontent\.com$/.test(String(e.origin || ''))) return false;
+  try { var src = e.source, top = frame && frame.contentWindow; return !!(src && top && (src === top || src.parent === top)); } catch (x) { return false; }
+}
+
 function bar(cls, text, buttons) {
   var b = document.createElement('div'); b.className = 'bar ' + cls;
   var s = document.createElement('span'); s.textContent = text; b.appendChild(s);
@@ -120,6 +126,19 @@ function examoraShell(role) {
     try { e.source.postMessage({ examora: 'reloading' }, e.origin); } catch (x) { }
     st.reloadTo = shellReloadSrc(role, r.src, d.params);
     f.src = st.reloadTo;
+  });
+
+  // Q: "Remember me" copy. Google's frame loses its storage on iPhone; this site's storage is the app's own and stays.
+  // Only the Examora page inside OUR frame may save or read it (origin + frame check); only a 64-hex device token is kept.
+  try { if (nav.storage && nav.storage.persist) nav.storage.persist().catch(function () {}); } catch (e) { }
+  window.addEventListener('message', function (e) {
+    var d = e && e.data;
+    if (!d || (d.examora !== 'keep' && d.examora !== 'keep-get') || !shellKeepFrom(e, f)) return;
+    if (d.kind !== 'student' && d.kind !== 'staff') return;
+    var key = 'exm_keep_' + d.kind;
+    if (d.examora === 'keep') { try { if (typeof d.token === 'string' && /^[0-9a-f]{64}$/.test(d.token)) localStorage.setItem(key, d.token); else localStorage.removeItem(key); } catch (x) { } return; }
+    var v = null; try { v = localStorage.getItem(key); } catch (x) { }
+    try { e.source.postMessage({ examora: 'kept', kind: d.kind, token: /^[0-9a-f]{64}$/.test(String(v || '')) ? v : null }, e.origin); } catch (x) { }
   });
 
   if (nav.serviceWorker && nav.serviceWorker.register) { try { nav.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
