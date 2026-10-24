@@ -112,15 +112,19 @@ function shellPreconnect() {
   });
 }
 /** R7: splash (brand mark + three breathing bars) over the frame until Examora says it is ready. */
+/** THEMES: splash colours of the look chosen inside Examora (told by the page, kept here as exm_shell_theme). [light bg, ink, accent, dark bg, dark ink, dark accent] */
+var SHELL_LOOKS = { classic: ['#f6f7f9', '#2457d6', '#ffb000', '#14171c', '#6b94ff', '#f0b35b'], editorial: ['#f4f1ea', '#0f4f47', '#e3a13a', '#0e1312', '#5fc2b2', '#f0b75a'],
+  navy: ['#f2f4f8', '#1b2f5c', '#b8901c', '#0a1020', '#8fb0ff', '#e0bf55'], brown: ['#f6efe5', '#6b3f22', '#c4622f', '#16100b', '#e3a779', '#ec8a55'] };
+function shellLook() { var k = ''; try { k = localStorage.getItem('exm_shell_theme') || ''; } catch (e) { } return SHELL_LOOKS[k] || SHELL_LOOKS.classic; }
 function shellSplash() {
   try {
-    var css = document.createElement('style');
-    css.textContent = '#exmSplash{position:fixed;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:#f4f1ea;transition:opacity .45s ease,visibility 0s .45s}' +
-      '#exmSplash.off{opacity:0;visibility:hidden}#exmSplash b{font:600 22px/1 system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;color:#0f4f47;letter-spacing:.02em}' +
-      '#exmSplash .mk{display:flex;gap:6px;align-items:flex-end;height:34px}#exmSplash .mk i{width:8px;border-radius:4px;background:#0f4f47;animation:exS 1s cubic-bezier(.2,.7,.2,1) infinite}' +
-      '#exmSplash .mk i:nth-child(1){height:18px}#exmSplash .mk i:nth-child(2){height:30px;background:#e3a13a;animation-delay:.12s}#exmSplash .mk i:nth-child(3){height:22px;animation-delay:.24s}' +
+    var L = shellLook(), css = document.createElement('style');
+    css.textContent = '#exmSplash{position:fixed;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:' + L[0] + ';transition:opacity .45s ease,visibility 0s .45s}' +
+      '#exmSplash.off{opacity:0;visibility:hidden}#exmSplash b{font:600 22px/1 system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;color:' + L[1] + ';letter-spacing:.02em}' +
+      '#exmSplash .mk{display:flex;gap:6px;align-items:flex-end;height:34px}#exmSplash .mk i{width:8px;border-radius:4px;background:' + L[1] + ';animation:exS 1s cubic-bezier(.2,.7,.2,1) infinite}' +
+      '#exmSplash .mk i:nth-child(1){height:18px}#exmSplash .mk i:nth-child(2){height:30px;background:' + L[2] + ';animation-delay:.12s}#exmSplash .mk i:nth-child(3){height:22px;animation-delay:.24s}' +
       '@keyframes exS{0%,100%{transform:scaleY(.45);opacity:.6}50%{transform:scaleY(1);opacity:1}}' +
-      '@media (prefers-color-scheme:dark){#exmSplash{background:#0e1312}#exmSplash b{color:#e9ece6}#exmSplash .mk i{background:#5fc2b2}#exmSplash .mk i:nth-child(2){background:#f0b75a}}';
+      '@media (prefers-color-scheme:dark){#exmSplash{background:' + L[3] + '}#exmSplash b{color:' + L[4] + '}#exmSplash .mk i{background:' + L[4] + '}#exmSplash .mk i:nth-child(2){background:' + L[5] + '}}';
     document.head.appendChild(css);
     var d = document.createElement('div'); d.id = 'exmSplash'; d.setAttribute('role', 'status');
     var mk = document.createElement('div'); mk.className = 'mk'; for (var i = 0; i < 3; i++) mk.appendChild(document.createElement('i'));
@@ -145,6 +149,7 @@ function examoraShell(role) {
   setTimeout(function () { shellSplashOff(splash); }, 30000);
   window.addEventListener('message', function (e) {
     if (e && e.data && e.data.examora === 'ready' && /^https:\/\/[a-z0-9\-]+\.googleusercontent\.com$/.test(String(e.origin || ''))) shellSplashOff(splash);
+    if (e && e.data && e.data.examora === 'theme' && SHELL_LOOKS[e.data.theme] && /^https:\/\/[a-z0-9\-]+\.googleusercontent\.com$/.test(String(e.origin || ''))) { try { localStorage.setItem('exm_shell_theme', e.data.theme); } catch (x) { } }
   });
   f.src = r.src; f.setAttribute('title', 'Examora'); f.setAttribute('allow', 'clipboard-write; camera; microphone; fullscreen');
   document.body.appendChild(f); st.frame = f;
