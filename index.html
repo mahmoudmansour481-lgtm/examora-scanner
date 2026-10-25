@@ -36,6 +36,8 @@ button.pri{background:var(--pri);color:var(--prit);border-color:var(--pri)}butto
 .cam video{width:100%;height:100%;object-fit:cover;display:block}.cam .aim{position:absolute;inset:18% 22%;border:3px solid rgba(255,255,255,.85);border-radius:14px}
 .banner{border-radius:12px;padding:12px 14px;margin:8px 0;font-weight:600;font-size:18px;border:1px solid var(--bd)}
 .banner.ok{background:var(--okbg);color:var(--ok)}.banner.warn{background:var(--warnbg);color:var(--warn)}.banner.bad{background:var(--badbg);color:var(--bad)}
+.flash{position:absolute;left:8px;right:8px;bottom:8px;border-radius:12px;padding:14px;font-size:22px;font-weight:700;text-align:center;color:#fff}.flash.ok{background:rgba(22,140,90,.92)}.flash.warn{background:rgba(190,120,20,.92)}.flash.bad{background:rgba(190,40,40,.92)}
+.done{width:100%;border-collapse:collapse;font-size:15px}.done td,.done th{padding:8px 6px;border-bottom:1px solid var(--bd);text-align:start}.done tr.new td{background:var(--okbg)}
 .st{font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--bd);white-space:nowrap}.st.Present{color:var(--ok)}.st.Late{color:var(--warn)}.st.Absent{color:var(--bad)}
 </style>
 </head>
@@ -72,10 +74,11 @@ button.pri{background:var(--pri);color:var(--prit);border-color:var(--pri)}butto
     </div>
     <div class="card">
       <div class="row"><button id="camBtn" class="pri sp"></button><select id="mode" style="width:auto"><option value="Present" data-i18n="present"></option><option value="Late" data-i18n="late"></option></select></div>
-      <div id="camBox" class="cam hide"><video id="video" playsinline muted></video><div class="aim"></div></div>
+      <div id="camBox" class="cam hide"><video id="video" playsinline muted></video><div class="aim"></div><div id="flash" class="flash hide" role="status"></div></div>
       <div id="banner" class="banner hide" role="status"></div>
       <div id="camMsg" class="msg" role="status"></div>
     </div>
+    <div class="card"><div class="row"><h3 class="sp" style="margin:0" data-i18n="doneTitle"></h3><span id="doneN" class="pill"></span></div><div id="doneList"></div></div>
     <div class="card">
       <label for="q" data-i18n="searchLbl" style="margin-top:0"></label>
       <input id="q" autocomplete="off" data-i18n-ph="searchPh">
@@ -94,7 +97,7 @@ var I18N = {
     classTitle: 'Title', classTitlePh: 'e.g. Lesson 3 review', start: 'Start', back: 'Back', open: 'Open', camOn: 'Scan with the camera', camOff: 'Stop the camera',
     present: 'Present', late: 'Late', searchLbl: 'Search by name (or type the card code and press Enter)', searchPh: 'Student name', findAll: 'Search all students',
     noHits: 'No student with this name in the class.', noneAll: 'No student found.', otherGroup: 'from another group', marked: '{n}: {s}.', already: '{n} was already marked ({s}).',
-    pendingLine: '{n} waiting to be sent (no connection). They are sent automatically.', countLine: 'Present {p} | Late {l} | Absent {a} | Not marked {n}', loading: 'Loading...',
+    pendingLine: '{n} waiting to be sent (no connection). They are sent automatically.', countLine: 'Present {p} | Late {l} | Absent {a} | Not marked {n}', doneTitle: 'Marked in this class', doneNone: 'Nobody marked yet. Scan a card.', colName: 'Name', colStatus: 'Status', colTime: 'Time', loading: 'Loading...',
     camNone: 'This phone does not allow the camera here. Use the name search, or open the app in Chrome / Safari.', camDenied: 'Allow the camera for this app, then try again.',
     'st.Present': 'Present', 'st.Late': 'Late', 'st.Absent': 'Absent', 'st.Excused': 'Excused', 'st.': '-',
     'err.API_URL': 'Paste the Examora link that ends in /exec.', 'err.NETWORK': 'No connection. Check the internet and try again.', 'err.AUTH_FAILED': 'Wrong email or PIN, or the account is locked for a while.',
@@ -110,7 +113,7 @@ var I18N = {
     classTitle: 'العنوان', classTitlePh: 'مثلا: مراجعة الدرس 3', start: 'ابدأ', back: 'رجوع', open: 'فتح', camOn: 'امسح بالكاميرا', camOff: 'اقفل الكاميرا',
     present: 'حاضر', late: 'متأخر', searchLbl: 'ابحث بالاسم (أو اكتب كود الكارت واضغط Enter)', searchPh: 'اسم الطالب', findAll: 'بحث في كل الطلاب',
     noHits: 'مفيش طالب بالاسم ده في الحصة.', noneAll: 'مفيش طالب بالاسم ده.', otherGroup: 'من مجموعة تانية', marked: '{n}: {s}.', already: '{n} متسجل بالفعل ({s}).',
-    pendingLine: '{n} مستني يتبعت (مفيش نت). هيتبعت لوحده.', countLine: 'حاضر {p} | متأخر {l} | غايب {a} | لسه {n}', loading: 'جاري التحميل...',
+    pendingLine: '{n} مستني يتبعت (مفيش نت). هيتبعت لوحده.', countLine: 'حاضر {p} | متأخر {l} | غايب {a} | لسه {n}', doneTitle: 'اللي اتسجلوا في الحصة', doneNone: 'لسه محدش اتسجل. امسح كارت.', colName: 'الاسم', colStatus: 'الحالة', colTime: 'الوقت', loading: 'جاري التحميل...',
     camNone: 'الموبايل ده مش سامح بالكاميرا هنا. استخدم البحث بالاسم، أو افتح التطبيق من Chrome / Safari.', camDenied: 'اسمح للتطبيق باستخدام الكاميرا وجرب تاني.',
     'st.Present': 'حاضر', 'st.Late': 'متأخر', 'st.Absent': 'غايب', 'st.Excused': 'بعذر', 'st.': '-',
     'err.API_URL': 'الصق لينك Examora اللي آخره /exec.', 'err.NETWORK': 'مفيش اتصال. اتأكد من النت وجرب تاني.', 'err.AUTH_FAILED': 'الإيميل أو الرقم السري غلط، أو الحساب مقفول شوية.',
@@ -120,7 +123,7 @@ var I18N = {
     'err.STATUS_INVALID': 'الحالة مش صحيحة.', 'err.READ_ONLY': 'الاشتراك انتهى: الحساب للعرض بس.', 'err.ERROR': 'حصل خطأ. حاول مرة تانية.'
   }
 };
-var LANG = 'en', TOKEN = null, DEV = null, RESUMING = null, API = '', CUR = null, CAM = null, LAST = { code: '', at: 0 }, QUEUE = [], BUSY = false;
+var LANG = 'en', TOKEN = null, DEV = null, RESUMING = null, API = '', CUR = null, CAM = null, LAST = { code: '', at: 0 }, QUEUE = [], BUSY = false, SCANS = [];   // SCANS: what was marked on this phone in this class (newest first)
 var API_RE = /^https:\/\/script\.google\.com\/(?:a\/macros\/[A-Za-z0-9.\-]+|macros)\/s\/[A-Za-z0-9_\-]+\/exec$/;
 function $(id) { return document.getElementById(id); }
 function t(k, p) { var s = (I18N[LANG] && I18N[LANG][k] !== undefined) ? I18N[LANG][k] : (I18N.en[k] !== undefined ? I18N.en[k] : k); return String(s).replace(/\{([a-z]+)\}/g, function (m, n) { return p && p[n] !== undefined ? String(p[n]) : m; }); }
@@ -223,8 +226,26 @@ function renderClass() {
   var box = $('cCounts'); box.textContent = '';
   box.appendChild(el('span', { cls: 'pill', text: t('countLine', { p: n.Present, l: n.Late, a: n.Absent, n: n.none }) }));
   $('pending').classList.toggle('hide', !QUEUE.length); $('pending').textContent = t('pendingLine', { n: QUEUE.length });
-  renderHits();
+  renderHits(); renderDone();
 }
+/** owner 2026-10-25: the students marked in this class, newest first (this phone's scans first, then the others marked before). */
+function renderDone() {
+  var box = $('doneList'); if (!box || !CUR) return; box.textContent = '';
+  var seen = {}, rows = [];
+  SCANS.filter(function (x) { return x.classId === CUR.classId; }).forEach(function (x) { if (seen[x.studentId]) return; seen[x.studentId] = true; rows.push(x); });
+  CUR.students.forEach(function (s) { if (!seen[s.studentId] && (s.status === 'Present' || s.status === 'Late')) rows.push({ studentId: s.studentId, name: s.name, status: s.status, at: 0 }); });
+  $('doneN').textContent = String(rows.length);
+  if (!rows.length) { box.appendChild(el('p', { cls: 'small', text: t('doneNone') })); return; }
+  var tb = el('tbody');
+  rows.forEach(function (x, i) {
+    var tm = x.at ? new Date(x.at).toTimeString().slice(0, 5) : '';
+    tb.appendChild(el('tr', { cls: i === 0 && x.at && Date.now() - x.at < 8000 ? 'new' : '' }, [el('td', { text: String(rows.length - i) }), el('td', {}, [el('b', { text: x.name })]),
+      el('td', {}, [el('span', { cls: 'st ' + x.status, text: t('st.' + x.status) })]), el('td', { cls: 'small mono', text: tm })]));
+  });
+  box.appendChild(el('table', { cls: 'done' }, [el('thead', {}, [el('tr', {}, [el('th', { text: '#' }), el('th', { text: t('colName') }), el('th', { text: t('colStatus') }), el('th', { text: t('colTime') })])]), tb]));
+}
+/** A big line over the camera for 2.5 seconds, so the teacher sees the result without looking down. */
+function flash(text, kind) { var f = $('flash'); if (!f) return; f.textContent = text; f.className = 'flash ' + kind; clearTimeout(flash.tm); flash.tm = setTimeout(function () { f.classList.add('hide'); }, 2500); }
 
 /** Same spelling rules as the server: no diacritics, one alef / ya / ta marbuta. */
 function normName(v) {
@@ -281,10 +302,11 @@ function send(job, fromQueue) {
       if (CUR) renderClass();
       return false;
     }
-    if (!r.ok) { if (!fromQueue) { banner(errText(r), 'bad'); beep(false); } return true; }
+    if (!r.ok) { if (!fromQueue) { banner(errText(r), 'bad'); flash(errText(r), 'bad'); beep(false); } return true; }
     var d = r.data, name = d.student.name + (d.otherGroup ? ' (' + t('otherGroup') + ')' : '');
     if (CUR && CUR.classId === d.cls.classId) CUR = d.cls;
-    if (!fromQueue) { banner(t(d.already ? 'already' : 'marked', { n: name, s: t('st.' + d.status) }), d.already ? 'warn' : 'ok'); beep(!d.already); }
+    if (!fromQueue) { var msg = t(d.already ? 'already' : 'marked', { n: name, s: t('st.' + d.status) }); banner(msg, d.already ? 'warn' : 'ok'); flash(msg, d.already ? 'warn' : 'ok'); beep(!d.already); }
+    if (!d.already || !SCANS.some(function (x) { return x.studentId === d.student.studentId && x.classId === d.cls.classId; })) SCANS.unshift({ classId: d.cls.classId, studentId: d.student.studentId, name: name, status: d.status, at: Date.now() });
     if (job.how === 'search' && !fromQueue) $('q').value = '';
     if (CUR) renderClass();
     return true;
@@ -337,7 +359,7 @@ function scanFrame() {
 /** The same card is ignored for 3 seconds so it is not sent twice while it is still in front of the camera. */
 function onCode(text) {
   var now = Date.now(), code = String(text).trim().slice(0, 300);
-  if (!code || (code === LAST.code && now - LAST.at < 3000)) return;
+  if (!code || (code === LAST.code && now - LAST.at < 15000)) return;   // owner 2026-10-25: the same card held in front of the camera is read once (was 3 s: the 2nd read said "already marked")
   LAST = { code: code, at: now }; checkIn(code, 'scan', $('mode').value);
 }
 
