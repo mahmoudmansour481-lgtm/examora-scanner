@@ -18,10 +18,10 @@ self.addEventListener('fetch', function (e) {
 function pushId() { return caches.open('exm-push-student').then(function (c) { return c.match('push-id'); }).then(function (r) { return r ? r.json() : null; }).catch(function () { return null; }); }
 self.addEventListener('push', function (e) {
   e.waitUntil(pushId().then(function (id) {
-    var none = { title: 'Examora', body: id && id.lang === 'ar' ? 'عندك جديد في Examora' : 'Something new in Examora', tag: 'examora' };
+    var none = { title: 'Examora', body: id && id.lang === 'ar' ? 'وصلك إشعار من Examora بس تفاصيله ما نزلتش - افتح التطبيق' : 'Examora notification, details did not load - open the app', tag: 'examora' };
     if (!id) return [none];
     return fetch(id.api, { method: 'POST', body: JSON.stringify({ action: 'pushPeek', sub: id.sub, key: id.key }) }).then(function (r) { return r.json(); })
-      .then(function (j) { return j && j.ok && j.data.notes.length ? j.data.notes : [none]; }).catch(function () { return [none]; });
+      .then(function (j) { var d = j && j.ok && j.data; return d && d.notes.length ? d.notes : d && d.recent && d.recent.length ? d.recent : [none]; }).catch(function () { return [none]; });
   }).then(function (list) {
     return Promise.all(list.slice(0, 3).map(function (n) { return self.registration.showNotification(n.title || 'Examora', { body: n.body || '', tag: n.tag || 'examora', icon: 'icon-v2-192.png', badge: 'icon-v2-192.png', data: { url: './' } }); }));
   }));
