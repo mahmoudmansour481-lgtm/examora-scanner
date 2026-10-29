@@ -96,7 +96,7 @@ var I18N = {
     todayTitle: "Today's classes", refresh: 'Refresh', noClasses: 'No class today yet. Start one below.', startClass: 'Start a class for today', group: 'Group',
     classTitle: 'Title', classTitlePh: 'e.g. Lesson 3 review', start: 'Start', back: 'Back', open: 'Open', camOn: 'Scan with the camera', camOff: 'Stop the camera',
     present: 'Present', late: 'Late', searchLbl: 'Search by name (or type the card code and press Enter)', searchPh: 'Student name', findAll: 'Search all students',
-    noHits: 'No student with this name in the class.', noneAll: 'No student found.', otherGroup: 'from another group', marked: '{n}: {s}.', already: '{n} was already marked ({s}).',
+    noHits: 'No student with this name in the class.', noneAll: 'No student found.', otherGroup: 'from another group', askTitle: 'This student is from another group', askBody: '{n} belongs to "{g}", not to this class. Add him to this class?', askYes: 'Add him', askNo: 'Remove', marked: '{n}: {s}.', already: '{n} was already marked ({s}).',
     pendingLine: '{n} waiting to be sent (no connection). They are sent automatically.', countLine: 'Present {p} | Late {l} | Absent {a} | Not marked {n}', doneTitle: 'Marked in this class', doneNone: 'Nobody marked yet. Scan a card.', colName: 'Name', colStatus: 'Status', colTime: 'Time', loading: 'Loading...',
     camNone: 'This phone does not allow the camera here. Use the name search, or open the app in Chrome / Safari.', camDenied: 'Allow the camera for this app, then try again.',
     'st.Present': 'Present', 'st.Late': 'Late', 'st.Absent': 'Absent', 'st.Excused': 'Excused', 'st.': '-',
@@ -112,7 +112,7 @@ var I18N = {
     todayTitle: 'حصص النهارده', refresh: 'تحديث', noClasses: 'مفيش حصة النهارده لسه. ابدأ واحدة تحت.', startClass: 'ابدأ حصة النهارده', group: 'المجموعة',
     classTitle: 'العنوان', classTitlePh: 'مثلا: مراجعة الدرس 3', start: 'ابدأ', back: 'رجوع', open: 'فتح', camOn: 'امسح بالكاميرا', camOff: 'اقفل الكاميرا',
     present: 'حاضر', late: 'متأخر', searchLbl: 'ابحث بالاسم (أو اكتب كود الكارت واضغط Enter)', searchPh: 'اسم الطالب', findAll: 'بحث في كل الطلاب',
-    noHits: 'مفيش طالب بالاسم ده في الحصة.', noneAll: 'مفيش طالب بالاسم ده.', otherGroup: 'من مجموعة تانية', marked: '{n}: {s}.', already: '{n} متسجل بالفعل ({s}).',
+    noHits: 'مفيش طالب بالاسم ده في الحصة.', noneAll: 'مفيش طالب بالاسم ده.', otherGroup: 'من مجموعة تانية', askTitle: 'الطالب ده من مجموعة تانية - خد بالك', askBody: '{n} من مجموعة "{g}" مش من الحصة دي. تسجله في الحصة دي؟', askYes: 'سجّله', askNo: 'شيله', marked: '{n}: {s}.', already: '{n} متسجل بالفعل ({s}).',
     pendingLine: '{n} مستني يتبعت (مفيش نت). هيتبعت لوحده.', countLine: 'حاضر {p} | متأخر {l} | غايب {a} | لسه {n}', doneTitle: 'اللي اتسجلوا في الحصة', doneNone: 'لسه محدش اتسجل. امسح كارت.', colName: 'الاسم', colStatus: 'الحالة', colTime: 'الوقت', loading: 'جاري التحميل...',
     camNone: 'الموبايل ده مش سامح بالكاميرا هنا. استخدم البحث بالاسم، أو افتح التطبيق من Chrome / Safari.', camDenied: 'اسمح للتطبيق باستخدام الكاميرا وجرب تاني.',
     'st.Present': 'حاضر', 'st.Late': 'متأخر', 'st.Absent': 'غايب', 'st.Excused': 'بعذر', 'st.': '-',
@@ -296,13 +296,14 @@ function checkIn(code, how, status) {
 }
 /** Resolves true when the job is finished (saved or refused), false when it must be sent again. */
 function send(job, fromQueue) {
-  return api('checkIn', { classId: job.classId, code: job.code, status: job.status, how: job.how }).then(function (r) {
+  return api('checkIn', { classId: job.classId, code: job.code, status: job.status, how: job.how, confirmOther: job.confirmOther === true }).then(function (r) {
     if (!r.ok && r.code === 'NETWORK') {
       if (!fromQueue) { QUEUE.push(job); banner(t('err.NETWORK'), 'warn'); beep(false); }
       if (CUR) renderClass();
       return false;
     }
     if (!r.ok) { if (!fromQueue) { banner(errText(r), 'bad'); flash(errText(r), 'bad'); beep(false); } return true; }
+    if (r.data.needsConfirm) { askOther(job, r.data); return true; }      // a student of another group: nothing saved until the secretary says yes
     var d = r.data, name = d.student.name + (d.otherGroup ? ' (' + t('otherGroup') + ')' : '');
     if (CUR && CUR.classId === d.cls.classId) CUR = d.cls;
     if (!fromQueue) { var msg = t(d.already ? 'already' : 'marked', { n: name, s: t('st.' + d.status) }); banner(msg, d.already ? 'warn' : 'ok'); flash(msg, d.already ? 'warn' : 'ok'); beep(!d.already); }
@@ -311,6 +312,19 @@ function send(job, fromQueue) {
     if (CUR) renderClass();
     return true;
   });
+}
+/** Full-screen question for a student of another group: "Add him" saves him as a visitor, "Remove" saves nothing. */
+function askOther(job, d) {
+  var old = $('askBox'); if (old && old.parentNode) old.parentNode.removeChild(old);
+  var close = function () { var b = $('askBox'); if (b && b.parentNode) b.parentNode.removeChild(b); };
+  var box = el('div', { id: 'askBox', style: 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:50;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px' }, [
+    el('div', { cls: 'card', style: 'max-width:420px;width:100%;border:2px solid var(--warn);margin:0' }, [
+      el('div', { style: 'font-size:20px;font-weight:700;margin-bottom:8px', text: t('askTitle') }),
+      el('div', { style: 'font-size:18px;margin-bottom:14px', text: t('askBody', { n: d.student.name, g: d.student.groupName || '-' }) }),
+      el('div', { cls: 'row' }, [
+        el('button', { cls: 'pri sp', text: t('askYes'), onclick: function () { close(); send({ classId: job.classId, code: job.code, how: job.how, status: job.status, confirmOther: true }, false); } }),
+        el('button', { cls: 'sp', text: t('askNo'), onclick: close })])])]);
+  document.body.appendChild(box); beep(false);
 }
 function flushQueue() {
   if (BUSY || !QUEUE.length || !TOKEN) return;
