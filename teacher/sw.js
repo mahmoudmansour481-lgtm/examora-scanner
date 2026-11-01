@@ -1,6 +1,6 @@
 // Examora Examora Teacher service worker: keeps the app shell on the device so it opens instantly and can be installed.
 // Only GET requests of this site are cached; Examora itself (script.google.com, inside the frame) always goes to the network.
-var CACHE = 'examora-teacher-v7';
+var CACHE = 'examora-teacher-v8';
 var FILES = ['./', './index.html', '../shell.js', '../config.js', './manifest.webmanifest', './icon-v2-192.png', './icon-v2-512.png'];
 self.addEventListener('install', function (e) { e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); }).then(function () { return self.skipWaiting(); })); });
 self.addEventListener('activate', function (e) {
@@ -18,7 +18,7 @@ self.addEventListener('fetch', function (e) {
 function pushId() { return caches.open('exm-push-teacher').then(function (c) { return c.match('push-id'); }).then(function (r) { return r ? r.json() : null; }).catch(function () { return null; }); }
 self.addEventListener('push', function (e) {
   e.waitUntil(pushId().then(function (id) {
-    var none = { title: 'Examora', body: id && id.lang === 'ar' ? 'وصلك إشعار من Examora بس تفاصيله ما نزلتش - افتح التطبيق' : 'Examora notification, details did not load - open the app', tag: 'examora' };
+    var none = { title: 'Examora', body: id && id.lang === 'ar' ? 'وصلك إشعار جديد من Examora - افتح التطبيق واضغط على الجرس فوق عشان تشوفه' : 'New Examora notification - open the app and tap the bell at the top to read it', tag: 'examora' };
     if (!id) return [none];
     return fetch(id.api, { method: 'POST', body: JSON.stringify({ action: 'pushPeek', sub: id.sub, key: id.key }) }).then(function (r) { return r.json(); })
       .then(function (j) { var d = j && j.ok && j.data; return d && d.notes.length ? d.notes : d && d.recent && d.recent.length ? d.recent : [none]; }).catch(function () { return [none]; });
