@@ -178,6 +178,65 @@ function examoraShell(role) {
     try { e.source.postMessage({ examora: 'kept', kind: d.kind, token: /^[0-9a-f]{64}$/.test(String(v || '')) ? v : null }, e.origin); } catch (x) { }
   });
 
+  // R8 (owner 2026-11-02): exam camera check. Google's frame refuses the camera, so the camera + face detector run HERE (top page) and only
+  // "faces / head turned" is sent to the exam inside the frame once a second. No picture or video leaves the phone.
+  var CAM = null;
+  // only the Examora page somewhere inside OUR frame (Google nests it 1-3 frames deep), from a googleusercontent origin
+  function camFrom(e) {
+    if (!/^https:\/\/[a-z0-9\-]+\.googleusercontent\.com$/.test(String(e.origin || ''))) return false;
+    try { var w = e.source, top = f.contentWindow; for (var i = 0; w && i < 5; i++) { if (w === top) return true; if (w === w.parent) break; w = w.parent; } } catch (x) { }
+    return false;
+  }
+  function camSend(m) { try { if (CAM && CAM.src) CAM.src.postMessage(m, CAM.origin); } catch (x) { } }
+  function camStop() {
+    if (!CAM) return;
+    if (CAM.loop) clearInterval(CAM.loop);
+    try { if (CAM.stream) CAM.stream.getTracks().forEach(function (tr) { tr.stop(); }); } catch (x) { }
+    try { if (CAM.det) CAM.det.close(); } catch (x) { }
+    try { if (CAM.v && CAM.v.parentNode) CAM.v.parentNode.removeChild(CAM.v); } catch (x) { }
+    CAM = null;
+  }
+  function camStart(e) {
+    camStop();
+    var c = CAM = { src: e.source, origin: e.origin, stream: null, det: null, loop: null, v: null };
+    camSend({ examora: 'camstate', state: 'asking' });             // tells the exam this shell can do it (the permission prompt may take a while)
+    if (!nav.mediaDevices || !nav.mediaDevices.getUserMedia) { camSend({ examora: 'camstate', state: 'off', why: 'nomedia' }); CAM = null; return; }
+    nav.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 } }, audio: false }).then(function (stream) {
+      if (CAM !== c) { stream.getTracks().forEach(function (tr) { tr.stop(); }); return; }
+      c.stream = stream;
+      var v = document.createElement('video'); v.setAttribute('playsinline', ''); v.setAttribute('autoplay', ''); v.muted = true; v.srcObject = stream;
+      v.style.cssText = 'position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;left:0;bottom:0'; document.body.appendChild(v); c.v = v;
+      try { v.play(); } catch (x) { }
+      camSend({ examora: 'camstate', state: 'on', n: -1 });          // camera is on, the detector is still loading
+      var imp; try { imp = new Function('u', 'return import(u)'); } catch (x) { camSend({ examora: 'camstate', state: 'nodet' }); return; }
+      imp('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs').then(function (m) {
+        return m.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm').then(function (fs) {
+          return m.FaceDetector.createFromOptions(fs, { baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite', delegate: 'CPU' }, runningMode: 'VIDEO', minDetectionConfidence: 0.5 });
+        });
+      }).then(function (det) {
+        if (CAM !== c) { try { det.close(); } catch (x) { } return; }
+        c.det = det;
+        c.loop = setInterval(function () {
+          if (CAM !== c || v.readyState < 2) return;
+          var res; try { res = det.detectForVideo(v, performance.now()); } catch (x) { return; }
+          var ds = (res && res.detections) || [], bad = ds.length !== 1;
+          if (ds.length === 1) { var k = ds[0].keypoints || []; if (k.length >= 3) { var eyeW = Math.abs(k[1].x - k[0].x) || 0.001, yaw = (k[2].x - (k[0].x + k[1].x) / 2) / eyeW; if (Math.abs(yaw) > 0.65) bad = true; } }
+          camSend({ examora: 'camstate', state: 'on', n: ds.length, bad: bad });
+        }, 1000);
+      }).catch(function () { camSend({ examora: 'camstate', state: 'nodet' }); });
+    }).catch(function (err) {
+      if (CAM !== c) return;
+      camSend({ examora: 'camstate', state: /policy|secure|NotFound|NotReadable/i.test(String(err && (err.name + ' ' + err.message))) ? 'off' : 'denied', why: String(err && err.name || '') });
+      CAM = null;
+    });
+  }
+  window.addEventListener('message', function (e) {
+    var d = e && e.data;
+    if (!d || d.examora !== 'cam' || !camFrom(e)) return;
+    if (d.op === 'start') camStart(e); else if (d.op === 'stop') camStop();
+    else if (d.op === 'ping') { try { e.source.postMessage({ examora: 'camstate', state: 'pong' }, e.origin); } catch (x) { } }
+  });
+
   if (nav.serviceWorker && nav.serviceWorker.register) { try { nav.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
 
   // P8: phone notifications. Examora (inside the frame) sends a one-time offer after sign-in; the permission is asked with OUR button.
