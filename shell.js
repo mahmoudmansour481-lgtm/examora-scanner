@@ -18,7 +18,7 @@ var I18N = {
   }
 };
 var EXEC_RE = /^https:\/\/script\.google\.com\/(?:a\/macros\/[A-Za-z0-9.\-]+|macros)\/s\/[A-Za-z0-9_\-]+\/exec$/;
-var PASS_KEYS = ['portal', 'h', 'qr', 'parent', 'lang'];          // only these reach Examora; anything else is dropped
+var PASS_KEYS = ['portal', 'h', 'qr', 'parent', 'lang', 'join'];   // P9.50: join = a teacher's online sign-up link          // only these reach Examora; anything else is dropped
 var LANG = 'en';
 function t(k) { return (I18N[LANG] && I18N[LANG][k]) || I18N.en[k] || k; }
 
