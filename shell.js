@@ -7,6 +7,7 @@ var I18N = {
     offline: 'No internet connection. Examora will reload when you are back online.',
     install: 'Install the app', installTeacher: 'Install Examora Teacher on this device', installStudent: 'Install Examora on this device',
     iosHint: 'To install: tap Share, then Add to Home Screen.', close: 'Close',
+    menuHint: 'Add Examora to your home screen: open the browser menu (⋮) and choose "Add to Home screen" or "Install app".',
     pushAsk: 'Get a notification on this phone when a new message or announcement arrives?', pushOn: 'Turn on', pushDenied: 'Notifications are blocked for this app in the phone settings.'
   },
   ar: {
@@ -14,6 +15,7 @@ var I18N = {
     offline: 'مفيش اتصال بالإنترنت. Examora هيفتح تاني أول ما النت يرجع.',
     install: 'ثبّت التطبيق', installTeacher: 'ثبّت تطبيق Examora للمدرس على الجهاز ده', installStudent: 'ثبّت تطبيق Examora على الجهاز ده',
     iosHint: 'للتثبيت: دوس على زر المشاركة وبعدين Add to Home Screen.', close: 'إغلاق',
+    menuHint: 'ضيف Examora للشاشة الرئيسية: افتح قايمة المتصفح (⋮) واختار "إضافة إلى الشاشة الرئيسية" أو "تثبيت التطبيق".',
     pushAsk: 'عايز إشعار على الموبايل ده لما توصلك رسالة أو إعلان جديد؟', pushOn: 'شغّل الإشعارات', pushDenied: 'الإشعارات مقفولة للتطبيق ده من إعدادات الموبايل.'
   }
 };
@@ -287,5 +289,10 @@ function examoraShell(role) {
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); st.installEvt = e; if (!dismissed && !standalone) show(st.bars.install); });
   window.addEventListener('appinstalled', function () { st.installEvt = null; hide(st.bars.install); });
   if (!standalone && !dismissed && /iphone|ipad|ipod/i.test(String(nav.userAgent || ''))) st.bars.ios = bar('', t('iosHint'), [[t('close'), dismiss]]);
+  // P9.51 (owner): browsers that never offer the install (Samsung Internet, some tablets) get the menu hint after a few seconds instead
+  if (!standalone && !dismissed && !/iphone|ipad|ipod/i.test(String(nav.userAgent || ''))) setTimeout(function () {
+    if (st.installEvt || dismissed) return; try { if (localStorage.getItem(KEY) === '1') return; } catch (e) {}
+    st.bars.ios = bar('', t('menuHint'), [[t('close'), dismiss]]);
+  }, 8000);
   return st;
 }
