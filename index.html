@@ -39,6 +39,9 @@ button.pri{background:var(--pri);color:var(--prit);border-color:var(--pri)}butto
 .flash{position:absolute;left:8px;right:8px;bottom:8px;border-radius:12px;padding:14px;font-size:22px;font-weight:700;text-align:center;color:#fff}.flash.ok{background:rgba(22,140,90,.92)}.flash.warn{background:rgba(190,120,20,.92)}.flash.bad{background:rgba(190,40,40,.92)}
 .done{width:100%;border-collapse:collapse;font-size:15px}.done td,.done th{padding:8px 6px;border-bottom:1px solid var(--bd);text-align:start}.done tr.new td{background:var(--okbg)}
 .st{font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--bd);white-space:nowrap}.st.Present{color:var(--ok)}.st.Late{color:var(--warn)}.st.Absent{color:var(--bad)}
+.pay{font-size:12px;padding:2px 8px;border-radius:99px;white-space:nowrap;margin-inline-start:6px}.pay.paid,.pay.free{background:var(--okbg);color:var(--ok)}.pay.owes{background:var(--badbg);color:var(--bad)}
+.tabs{display:flex;gap:6px;margin:0 0 12px}.tabs button{flex:1}.big{font-size:22px;font-weight:700}.due{font-size:20px;font-weight:700;margin:6px 0}.due.ok{color:var(--ok)}.due.bad{color:var(--bad)}
+a.wa{display:inline-flex;align-items:center;padding:6px 10px;min-height:36px;border-radius:10px;background:#1f9d55;color:#fff;text-decoration:none;font-size:14px}
 </style>
 </head>
 <body>
@@ -56,6 +59,7 @@ button.pri{background:var(--pri);color:var(--prit);border-color:var(--pri)}butto
     <div id="loginMsg" class="msg" role="status"></div>
   </section>
 
+  <div id="tabs" class="tabs hide"><button id="tabAtt" data-i18n="tabAtt"></button><button id="tabPay" data-i18n="tabPay"></button></div>
   <section id="vToday" class="hide">
     <div class="card"><div class="row"><h2 class="sp" style="margin:0"><span data-i18n="todayTitle"></span> <span id="todayDate" class="mono small"></span></h2><button id="refresh" class="sm" data-i18n="refresh"></button></div>
       <div id="clsList"></div><div id="todayMsg" class="msg" role="status"></div></div>
@@ -86,6 +90,19 @@ button.pri{background:var(--pri);color:var(--prit);border-color:var(--pri)}butto
       <button id="findAll" class="sm hide" data-i18n="findAll" style="margin-top:8px"></button>
     </div>
   </section>
+
+  <!-- P9.54 (owner): the payments secretary: scan the card -> name + what he owes -> confirm (the amount can be changed) -->
+  <section id="vPay" class="hide">
+    <div class="card">
+      <div class="row"><h2 class="sp" style="margin:0" data-i18n="payTitle"></h2></div>
+      <div class="row"><button id="pcamBtn" class="pri sp"></button></div>
+      <div id="pCamSlot"></div>
+      <div id="pcamMsg" class="msg" role="status"></div>
+      <label for="pq" data-i18n="paySearch"></label><input id="pq" autocomplete="off" data-i18n-ph="searchPh"><div id="phits"></div>
+    </div>
+    <div id="payCard" class="card hide"></div>
+    <div class="card"><div class="row"><h3 class="sp" style="margin:0" data-i18n="payDayT"></h3><span id="pdN" class="pill"></span><button id="pdRef" class="sm" data-i18n="refresh"></button></div><div id="pdList"></div></div>
+  </section>
 </div>
 <script>
 'use strict';
@@ -100,8 +117,14 @@ var I18N = {
     pendingLine: '{n} waiting to be sent (no connection). They are sent automatically.', countLine: 'Present {p} | Late {l} | Absent {a} | Not marked {n}', doneTitle: 'Marked in this class', doneNone: 'Nobody marked yet. Scan a card.', colName: 'Name', colStatus: 'Status', colTime: 'Time', loading: 'Loading...',
     camNone: 'This phone does not allow the camera here. Use the name search, or open the app in Chrome / Safari.', camDenied: 'Allow the camera for this app, then try again.',
     'st.Present': 'Present', 'st.Late': 'Late', 'st.Absent': 'Absent', 'st.Excused': 'Excused', 'st.': '-',
+    tabAtt: 'Attendance', tabPay: 'Payments', payTitle: 'Payments', paySearch: 'Or search by name', pick: 'Choose', 'pay.paid': 'paid', 'pay.owes': 'owes', 'pay.free': 'free', owesN: 'owes {n}',
+    payPaid: 'Paid. Nothing due.', payAhead: 'Paid ahead: {n} EGP', payDue: 'Due: {n} EGP', payLast: 'Last month paid: from {d}', payNone: 'Nothing paid yet.', payToday: 'Paid today: {n}',
+    payMonth: 'Month from {d} - {s} classes{a}', payAbs: ', {n} absence(s) taken off', paySession: 'Class {d}', payCharge: 'Charge {d}', payLeft: 'left {n}', perSession: 'Pays per class', freeStudent: 'Free',
+    payAmount: 'Amount received (cash)', payOk: 'Confirm', payCancel: 'Cancel', paySaved: '{n}: {a} EGP received.', payAgain: 'Already received a moment ago (not counted twice).', payDayT: 'Payments today',
+    payNoneDay: 'No payment yet today.', sendWa: 'WhatsApp', owesAtDoor: '{n}: present - has NOT paid. Send him to the payments desk.', camOnP: 'Scan a card', inactive: 'deactivated',
+    'err.AMOUNT_INVALID': 'Write the amount.',
     'err.API_URL': 'Paste the Examora link that ends in /exec.', 'err.NETWORK': 'No connection. Check the internet and try again.', 'err.AUTH_FAILED': 'Wrong email or PIN, or the account is locked for a while.',
-    'err.SESSION_EXPIRED': 'You were signed out. Sign in again.', 'err.FORBIDDEN': 'You do not have the attendance permission.', 'err.BUSY': 'The server is busy. Try again in a moment.',
+    'err.SESSION_EXPIRED': 'You were signed out. Sign in again.', 'err.FORBIDDEN': 'You do not have this permission (attendance / payments).', 'err.BUSY': 'The server is busy. Try again in a moment.',
     'err.BAD_REQUEST': 'The app needs an update: reload it.', 'err.STUDENT_NOT_FOUND': 'Student not found.', 'err.STUDENT_INACTIVE': 'This student is deactivated.',
     'err.CLASS_NOT_FOUND': 'Class not found.', 'err.CLASS_EXISTS': 'This group already has a class today.', 'err.CLASS_CANCELLED': 'This class is cancelled.', 'err.GROUP_NOT_FOUND': 'Group not found.', 'err.TITLE_REQUIRED': 'Write a title.',
     'err.STATUS_INVALID': 'Status is not valid.', 'err.READ_ONLY': 'The subscription ended: the account is read-only.', 'err.ERROR': 'Something went wrong. Please try again.'
@@ -116,13 +139,20 @@ var I18N = {
     pendingLine: '{n} مستني يتبعت (مفيش نت). هيتبعت لوحده.', countLine: 'حاضر {p} | متأخر {l} | غايب {a} | لسه {n}', doneTitle: 'اللي اتسجلوا في الحصة', doneNone: 'لسه محدش اتسجل. امسح كارت.', colName: 'الاسم', colStatus: 'الحالة', colTime: 'الوقت', loading: 'جاري التحميل...',
     camNone: 'الموبايل ده مش سامح بالكاميرا هنا. استخدم البحث بالاسم، أو افتح التطبيق من Chrome / Safari.', camDenied: 'اسمح للتطبيق باستخدام الكاميرا وجرب تاني.',
     'st.Present': 'حاضر', 'st.Late': 'متأخر', 'st.Absent': 'غايب', 'st.Excused': 'بعذر', 'st.': '-',
+    tabAtt: 'الحضور', tabPay: 'الدفع', payTitle: 'الدفع', paySearch: 'أو دوّر بالاسم', pick: 'اختار', 'pay.paid': 'دافع', 'pay.owes': 'مش دافع', 'pay.free': 'مجاني', owesN: 'عليه {n}',
+    payPaid: 'دافع. مفيش عليه حاجة.', payAhead: 'دافع مقدّم: {n} جنيه', payDue: 'عليه: {n} جنيه', payLast: 'آخر شهر دفعه: من {d}', payNone: 'لسه ما دفعش حاجة.', payToday: 'دفع النهارده: {n}',
+    payMonth: 'شهر من \u2066{d}\u2069 - {s} حصص{a}', payAbs: '، خصم غياب {n}', paySession: 'حصة {d}', payCharge: 'رسوم {d}', payLeft: 'باقي {n}', perSession: 'بيدفع بالحصة', freeStudent: 'مجاني',
+    payAmount: 'المبلغ اللي استلمته (كاش)', payOk: 'تأكيد', payCancel: 'إلغاء', paySaved: '{n}: اتسجل {a} جنيه.', payAgain: 'اتسجلت من ثواني (مش هتتحسب مرتين).', payDayT: 'مدفوعات النهارده',
+    payNoneDay: 'لسه مفيش دفع النهارده.', sendWa: 'واتساب', owesAtDoor: '{n}: حاضر - مش دافع. ابعته لمكتب الدفع.', camOnP: 'امسح كارت', inactive: 'متوقف',
+    'err.AMOUNT_INVALID': 'اكتب المبلغ.',
     'err.API_URL': 'الصق لينك Examora اللي آخره /exec.', 'err.NETWORK': 'مفيش اتصال. اتأكد من النت وجرب تاني.', 'err.AUTH_FAILED': 'الإيميل أو الرقم السري غلط، أو الحساب مقفول شوية.',
-    'err.SESSION_EXPIRED': 'خرجت من الحساب. ادخل تاني.', 'err.FORBIDDEN': 'معندكش صلاحية الحضور.', 'err.BUSY': 'السيرفر مشغول. جرب كمان شوية.',
+    'err.SESSION_EXPIRED': 'خرجت من الحساب. ادخل تاني.', 'err.FORBIDDEN': 'معندكش الصلاحية دي (الحضور / الدفع).', 'err.BUSY': 'السيرفر مشغول. جرب كمان شوية.',
     'err.BAD_REQUEST': 'التطبيق محتاج تحديث: اعمل إعادة تحميل.', 'err.STUDENT_NOT_FOUND': 'الطالب مش موجود.', 'err.STUDENT_INACTIVE': 'الطالب ده متوقف.',
     'err.CLASS_NOT_FOUND': 'الحصة مش موجودة.', 'err.CLASS_EXISTS': 'المجموعة دي عندها حصة النهارده بالفعل.', 'err.CLASS_CANCELLED': 'الحصة دي ملغية.', 'err.GROUP_NOT_FOUND': 'المجموعة مش موجودة.', 'err.TITLE_REQUIRED': 'اكتب عنوان.',
     'err.STATUS_INVALID': 'الحالة مش صحيحة.', 'err.READ_ONLY': 'الاشتراك انتهى: الحساب للعرض بس.', 'err.ERROR': 'حصل خطأ. حاول مرة تانية.'
   }
 };
+var MODE = 'att', CAN = { att: true, pay: false }, PAYING = null;   // P9.54: attendance or payments
 var LANG = 'en', TOKEN = null, DEV = null, RESUMING = null, API = '', CUR = null, CAM = null, LAST = { code: '', at: 0 }, QUEUE = [], BUSY = false, SCANS = [];   // SCANS: what was marked on this phone in this class (newest first)
 var API_RE = /^https:\/\/script\.google\.com\/(?:a\/macros\/[A-Za-z0-9.\-]+|macros)\/s\/[A-Za-z0-9_\-]+\/exec$/;
 function $(id) { return document.getElementById(id); }
@@ -176,7 +206,7 @@ function resume() {
   return RESUMING;
 }
 
-function show(v) { ['vLogin', 'vToday', 'vClass'].forEach(function (x) { $(x).classList.toggle('hide', x !== v); }); $('outBtn').classList.toggle('hide', v === 'vLogin'); if (v !== 'vClass') stopCam(); }
+function show(v) { ['vLogin', 'vToday', 'vClass', 'vPay'].forEach(function (x) { $(x).classList.toggle('hide', x !== v); }); $('outBtn').classList.toggle('hide', v === 'vLogin'); if (v === 'vLogin') $('tabs').classList.add('hide'); stopCam(); }
 function apiUi() { var known = API_RE.test(API); $('apiW').classList.toggle('hide', known); $('apiKnown').classList.toggle('hide', !known); }
 $('apiChange').addEventListener('click', function () { API = ''; $('api').value = ''; apiUi(); });
 function signedOut(msg) { TOKEN = null; sput('exs_tok', null); CUR = null; show('vLogin'); say('loginMsg', msg || '', msg ? 'err' : ''); $('pin').value = ''; }
@@ -198,6 +228,9 @@ function loadToday() {
   show('vToday'); say('todayMsg', t('loading'));
   api('today', {}).then(function (r) {
     if (!r.ok) { say('todayMsg', errText(r), 'err'); return; }
+    CAN = { att: r.data.canAttend !== false, pay: r.data.canPay === true };   // P9.54
+    $('tabs').classList.toggle('hide', !(CAN.att && CAN.pay)); tabsUi();
+    if (!CAN.att) { openPay(); return; }
     say('todayMsg', ''); $('todayDate').textContent = r.data.date;
     var box = $('clsList'); box.textContent = '';
     if (!r.data.classes.length) box.appendChild(el('p', { cls: 'small', text: t('noClasses') }));
@@ -239,7 +272,7 @@ function renderDone() {
   var tb = el('tbody');
   rows.forEach(function (x, i) {
     var tm = x.at ? new Date(x.at).toTimeString().slice(0, 5) : '';
-    tb.appendChild(el('tr', { cls: i === 0 && x.at && Date.now() - x.at < 8000 ? 'new' : '' }, [el('td', { text: String(rows.length - i) }), el('td', {}, [el('b', { text: x.name })]),
+    tb.appendChild(el('tr', { cls: i === 0 && x.at && Date.now() - x.at < 8000 ? 'new' : '' }, [el('td', { text: String(rows.length - i) }), el('td', {}, [el('b', { text: x.name }), payBadge(curStudent(x.studentId))]),
       el('td', {}, [el('span', { cls: 'st ' + x.status, text: t('st.' + x.status) })]), el('td', { cls: 'small mono', text: tm })]));
   });
   box.appendChild(el('table', { cls: 'done' }, [el('thead', {}, [el('tr', {}, [el('th', { text: '#' }), el('th', { text: t('colName') }), el('th', { text: t('colStatus') }), el('th', { text: t('colTime') })])]), tb]));
@@ -253,8 +286,10 @@ function normName(v) {
     .replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي').replace(/\s+/g, ' ').trim();
 }
 function looksLikeCode(v) { return /[?&]qr=/.test(v) || /^[A-Za-z]{1,3}-[A-Za-z0-9]{4,}$/.test(v); }
+function payBadge(s) { return s && s.pay ? el('span', { cls: 'pay ' + s.pay, text: s.pay === 'owes' && s.owes ? t('owesN', { n: s.owes }) : t('pay.' + s.pay) }) : null; }
+function curStudent(id) { return CUR ? CUR.students.filter(function (x) { return x.studentId === id; })[0] : null; }
 function studentRow(s, extra) {
-  return el('div', { cls: 'item' }, [el('div', { cls: 'sp' }, [el('b', { text: s.name }), el('div', { cls: 'small mono', text: s.studentId + (extra ? '  ' + extra : '') })]),
+  return el('div', { cls: 'item' }, [el('div', { cls: 'sp' }, [el('b', { text: s.name }), el('div', { cls: 'small mono', text: s.studentId + (extra ? '  ' + extra : '') })]), payBadge(s),
     s.status !== undefined ? el('span', { cls: 'st ' + (s.status || ''), text: t('st.' + (s.status || '')) }) : null,
     el('button', { cls: 'sm pri', text: t('present'), onclick: function () { checkIn(s.studentId, 'search', 'Present'); } }),
     el('button', { cls: 'sm', text: t('late'), onclick: function () { checkIn(s.studentId, 'search', 'Late'); } })]);
@@ -306,7 +341,9 @@ function send(job, fromQueue) {
     if (r.data.needsConfirm) { askOther(job, r.data); return true; }      // a student of another group: nothing saved until the secretary says yes
     var d = r.data, name = d.student.name + (d.otherGroup ? ' (' + t('otherGroup') + ')' : '');
     if (CUR && CUR.classId === d.cls.classId) CUR = d.cls;
-    if (!fromQueue) { var msg = t(d.already ? 'already' : 'marked', { n: name, s: t('st.' + d.status) }); banner(msg, d.already ? 'warn' : 'ok'); flash(msg, d.already ? 'warn' : 'ok'); beep(!d.already); }
+    if (!fromQueue) { var msg = t(d.already ? 'already' : 'marked', { n: name, s: t('st.' + d.status) }), owes = d.student.pay === 'owes';   // P9.54: not paid -> tell the door
+      if (owes) msg = t('owesAtDoor', { n: d.student.name });
+      banner(msg, owes || d.already ? 'warn' : 'ok'); flash(msg, owes || d.already ? 'warn' : 'ok'); beep(!d.already && !owes); }
     if (!d.already || !SCANS.some(function (x) { return x.studentId === d.student.studentId && x.classId === d.cls.classId; })) SCANS.unshift({ classId: d.cls.classId, studentId: d.student.studentId, name: name, status: d.status, at: Date.now() });
     if (job.how === 'search' && !fromQueue) $('q').value = '';
     if (CUR) renderClass();
@@ -335,7 +372,7 @@ setInterval(flushQueue, 10000);
 if (window.addEventListener) window.addEventListener('online', flushQueue);   // send the waiting scans as soon as the signal is back
 
 // ---- camera: BarcodeDetector when the phone has it, jsQR (vendored, same site) otherwise ----
-function camLabel() { $('camBtn').textContent = t(CAM ? 'camOff' : 'camOn'); }
+function camLabel() { $('camBtn').textContent = t(CAM ? 'camOff' : 'camOn'); $('pcamBtn').textContent = t(CAM ? 'camOff' : 'camOnP'); }
 function loadJsQR(cb) {
   if (window.jsQR) { cb(); return; }
   var s = document.createElement('script'); s.src = 'jsQR.js'; s.onload = cb; s.onerror = function () { say('camMsg', t('camNone'), 'err'); stopCam(); }; document.head.appendChild(s);
@@ -374,8 +411,78 @@ function scanFrame() {
 function onCode(text) {
   var now = Date.now(), code = String(text).trim().slice(0, 300);
   if (!code || (code === LAST.code && now - LAST.at < 15000)) return;   // owner 2026-10-25: the same card held in front of the camera is read once (was 3 s: the 2nd read said "already marked")
-  LAST = { code: code, at: now }; checkIn(code, 'scan', $('mode').value);
+  LAST = { code: code, at: now }; if (MODE === 'pay') payLookup(code); else checkIn(code, 'scan', $('mode').value);
 }
+
+// ---- P9.54 (owner): payments by QR ----
+var CAMHOME = null;
+function tabsUi() { $('tabAtt').classList.toggle('pri', MODE === 'att'); $('tabPay').classList.toggle('pri', MODE === 'pay'); }
+function openPay() {
+  MODE = 'pay'; tabsUi(); show('vPay'); CAMHOME = CAMHOME || { p: $('camBox').parentNode, n: $('camBox').nextSibling };
+  $('pCamSlot').appendChild($('camBox')); camLabel(); $('payCard').classList.add('hide'); PAYING = null; loadPayDay();
+}
+function leavePay() { MODE = 'att'; tabsUi(); stopCam(); if (CAMHOME) CAMHOME.p.insertBefore($('camBox'), CAMHOME.n); camLabel(); loadToday(); }
+$('tabPay').addEventListener('click', function () { if (MODE !== 'pay') openPay(); });
+$('tabAtt').addEventListener('click', function () { if (MODE !== 'att') leavePay(); });
+$('pcamBtn').addEventListener('click', function () { if (CAM) stopCam(); else startCam(); });
+function payLookup(code) {
+  say('pcamMsg', t('loading'));
+  api('payInfo', { code: code }).then(function (r) { if (!r.ok) { say('pcamMsg', errText(r), 'err'); beep(false); return; } say('pcamMsg', ''); beep(true); renderPay(r.data, ''); });
+}
+function owesLine(o) {
+  if (o.type === 'Month') return t('payMonth', { d: o.label, s: o.sessions - o.absent, a: o.absent ? t('payAbs', { n: o.absent }) : '' });
+  return t(o.type === 'Session' ? 'paySession' : 'payCharge', { d: o.label });
+}
+function renderPay(d, note) {
+  PAYING = d; var c = $('payCard'), st = d.student; c.textContent = ''; c.classList.remove('hide');
+  c.appendChild(el('div', { cls: 'big', text: st.name }));
+  c.appendChild(el('div', { cls: 'small', text: st.groupName + '  |  ' + st.studentId + (st.billingType === 'Per_Session' ? '  |  ' + t('perSession') : st.billingType === 'Free' ? '  |  ' + t('freeStudent') : '') + (st.active ? '' : '  |  ' + t('inactive')) }));
+  c.appendChild(el('div', { cls: 'due ' + (d.balance > 0 ? 'bad' : 'ok'), text: d.balance > 0 ? t('payDue', { n: d.balance }) : d.balance < 0 ? t('payAhead', { n: -d.balance }) : t('payPaid') }));
+  d.owes.forEach(function (o) { c.appendChild(el('div', { cls: 'item' }, [el('span', { cls: 'sp', text: owesLine(o) }), el('b', { text: o.left !== o.amount ? t('payLeft', { n: o.left }) + ' / ' + o.amount : String(o.amount) })])); });
+  c.appendChild(el('div', { cls: 'small', text: d.lastPaid ? (d.lastPaid.type === 'Month' ? t('payLast', { d: d.lastPaid.label }) : '') : t('payNone') }));
+  if (d.today.length) c.appendChild(el('div', { cls: 'small', text: t('payToday', { n: d.today.map(function (x) { return x.amount; }).join(' + ') }) }));
+  var amt = el('input', { id: 'payAmt', type: 'number', min: '0', step: '1', dir: 'ltr' }); amt.value = d.balance > 0 ? String(d.balance) : '';
+  var msg = el('div', { cls: 'msg', role: 'status' }); if (note) { msg.textContent = note; msg.className = 'msg ok'; }
+  var ok = el('button', { cls: 'pri sp', text: t('payOk'), onclick: function () {
+    if (!(Number(amt.value) > 0)) { msg.textContent = t('err.AMOUNT_INVALID'); msg.className = 'msg err'; return; }
+    ok.disabled = true; msg.textContent = t('loading'); msg.className = 'msg';
+    api('pay', { studentId: st.studentId, amount: Number(amt.value) }).then(function (r) {
+      ok.disabled = false; if (!r.ok) { msg.textContent = errText(r); msg.className = 'msg err'; beep(false); return; }
+      beep(true); renderPay(r.data, r.data.repeated ? t('payAgain') : t('paySaved', { n: st.name, a: r.data.amount })); loadPayDay();
+    });
+  } });
+  c.appendChild(el('label', { 'for': 'payAmt', text: t('payAmount') })); c.appendChild(amt); c.appendChild(msg);
+  c.appendChild(el('div', { cls: 'row', style: 'margin-top:8px' }, [ok, el('button', { cls: 'sp', text: t('payCancel'), onclick: function () { PAYING = null; c.classList.add('hide'); } })]));
+  if (!note) amt.focus();
+}
+$('pq').addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter') return; var v = $('pq').value.trim(); if (v.length < 2) return;
+  if (looksLikeCode(v)) { payLookup(v); $('pq').value = ''; return; }
+  api('find', { q: v }).then(function (r) {
+    var box = $('phits'); box.textContent = ''; if (!r.ok) { box.appendChild(el('p', { cls: 'small', text: errText(r) })); return; }
+    if (!r.data.length) { box.appendChild(el('p', { cls: 'small', text: t('noneAll') })); return; }
+    r.data.forEach(function (x) { box.appendChild(el('div', { cls: 'item' }, [el('div', { cls: 'sp' }, [el('b', { text: x.name }), el('div', { cls: 'small', text: x.groupName })]),
+      el('button', { cls: 'sm pri', text: t('pick'), onclick: function () { box.textContent = ''; $('pq').value = ''; payLookup(x.studentId); } })])); });
+  });
+});
+function coverText(cv) { var ar = LANG === 'ar'; return (cv || []).map(function (c) { return (c.type === 'Month' ? (ar ? 'شهر من ' : 'month from ') : c.type === 'Session' ? (ar ? 'حصة ' : 'class ') : (ar ? 'رسوم ' : 'charge ')) + c.label + (c.full ? '' : (ar ? ' (جزء)' : ' (part)')); }).join(ar ? '، ' : ', '); }
+function waMsg(x) {
+  var ar = x.language !== 'en', d = String(x.at).slice(0, 10), cv = (x.covers || []).map(function (c) { return (c.type === 'Month' ? (ar ? 'شهر من ' : 'month from ') : c.type === 'Session' ? (ar ? 'حصة ' : 'class ') : (ar ? 'رسوم ' : 'charge ')) + c.label + (c.full ? '' : (ar ? ' (جزء)' : ' (part)')); }).join(ar ? '، ' : ', ');
+  return ar ? 'تم استلام ' + x.amount + ' جنيه من الطالب/ة ' + x.name + ' بتاريخ ' + d + (cv ? ' عن: ' + cv : '') + '.' + (x.balance > 0 ? ' المتبقي: ' + x.balance + ' جنيه.' : '') + ' شكرا.'
+    : 'Received ' + x.amount + ' EGP for ' + x.name + ' on ' + d + (cv ? ' for: ' + cv : '') + '.' + (x.balance > 0 ? ' Remaining: ' + x.balance + ' EGP.' : '') + ' Thank you.';
+}
+function loadPayDay() {
+  api('payDay', {}).then(function (r) {
+    var box = $('pdList'); box.textContent = ''; if (!r.ok) { box.appendChild(el('p', { cls: 'small', text: errText(r) })); return; }
+    $('pdN').textContent = r.data.rows.length + '  |  ' + r.data.total;
+    if (!r.data.rows.length) { box.appendChild(el('p', { cls: 'small', text: t('payNoneDay') })); return; }
+    r.data.rows.forEach(function (x) {
+      box.appendChild(el('div', { cls: 'item' }, [el('div', { cls: 'sp' }, [el('b', { text: x.name + '  ' + x.amount }), el('div', { cls: 'small', text: String(x.at).slice(11, 16) + '  |  ' + coverText(x.covers) + (x.by ? '  |  ' + x.by : '') })]),
+        x.parentPhone ? el('a', { cls: 'wa', href: 'https://wa.me/' + x.parentPhone + '?text=' + encodeURIComponent(waMsg(x)), target: '_blank', rel: 'noopener', text: t('sendWa') }) : null]));
+    });
+  });
+}
+$('pdRef').addEventListener('click', loadPayDay);
 
 // ---- start ----
 (function init() {
