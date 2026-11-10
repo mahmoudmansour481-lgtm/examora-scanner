@@ -116,7 +116,7 @@ function shellPreconnect() {
 /** R7: splash (brand mark + three breathing bars) over the frame until Examora says it is ready. */
 /** THEMES: splash colours of the look chosen inside Examora (told by the page, kept here as exm_shell_theme). [light bg, ink, accent, dark bg, dark ink, dark accent] */
 var SHELL_LOOKS = { classic: ['#f6f7f9', '#2457d6', '#ffb000', '#14171c', '#6b94ff', '#f0b35b'], editorial: ['#f4f1ea', '#0f4f47', '#e3a13a', '#0e1312', '#5fc2b2', '#f0b75a'],
-  navy: ['#f2f4f8', '#1b2f5c', '#b8901c', '#0a1020', '#8fb0ff', '#e0bf55'], brown: ['#f6efe5', '#6b3f22', '#c4622f', '#16100b', '#e3a779', '#ec8a55'] };
+  navy: ['#f2f4f8', '#1b2f5c', '#b8901c', '#0a1020', '#8fb0ff', '#e0bf55'], brown: ['#f6efe5', '#6b3f22', '#c4622f', '#16100b', '#e3a779', '#ec8a55'], glass: ['#f4f7fb', '#0277b5', '#14b8a6', '#0a111e', '#4cc3fa', '#fbbf24'] };
 function shellLook() { var k = ''; try { k = localStorage.getItem('exm_shell_theme') || ''; } catch (e) { } return SHELL_LOOKS[k] || SHELL_LOOKS.classic; }
 function shellSplash() {
   try {
