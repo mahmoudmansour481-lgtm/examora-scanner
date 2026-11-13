@@ -59,6 +59,8 @@ a.wa{display:inline-flex;align-items:center;padding:6px 10px;min-height:36px;bor
     <div id="loginMsg" class="msg" role="status"></div>
   </section>
 
+  <div id="hpRow" class="row hide" style="justify-content:flex-end;margin:4px 0"><button id="hpBtn" class="sm" data-i18n="hpBtn"></button></div>
+  <div id="hpBox" class="card hide"><div id="hpBody"></div></div>
   <div id="tabs" class="tabs hide"><button id="tabAtt" data-i18n="tabAtt"></button><button id="tabPay" data-i18n="tabPay"></button></div>
   <section id="vToday" class="hide">
     <div class="card"><div class="row"><h2 class="sp" style="margin:0"><span data-i18n="todayTitle"></span> <span id="todayDate" class="mono small"></span></h2><button id="refresh" class="sm" data-i18n="refresh"></button></div>
@@ -80,6 +82,7 @@ a.wa{display:inline-flex;align-items:center;padding:6px 10px;min-height:36px;bor
       <div class="row"><button id="camBtn" class="pri sp"></button><select id="mode" style="width:auto"><option value="Present" data-i18n="present"></option><option value="Late" data-i18n="late"></option></select></div>
       <div id="camBox" class="cam hide"><video id="video" playsinline muted></video><div class="aim"></div><div id="flash" class="flash hide" role="status"></div></div>
       <div id="banner" class="banner hide" role="status"></div>
+      <div id="doorPay" class="hide" style="margin:6px 0"></div>
       <div id="camMsg" class="msg" role="status"></div>
     </div>
     <div class="card"><div class="row"><h3 class="sp" style="margin:0" data-i18n="doneTitle"></h3><span id="doneN" class="pill"></span></div><div id="doneList"></div></div>
@@ -121,7 +124,7 @@ var I18N = {
     payPaid: 'Paid. Nothing due.', payAhead: 'Paid ahead: {n} EGP', payDue: 'Due: {n} EGP', payLast: 'Last month paid: from {d}', payNone: 'Nothing paid yet.', payToday: 'Paid today: {n}',
     payMonth: 'Month from {d} - {s} classes{a}', payAbs: ', {n} absence(s) taken off', paySession: 'Class {d}', payCharge: 'Charge {d}', payLeft: 'left {n}', perSession: 'Pays per class', freeStudent: 'Free',
     payAmount: 'Amount received (cash)', payOk: 'Confirm', payCancel: 'Cancel', paySaved: '{n}: {a} EGP received.', payAgain: 'Already received a moment ago (not counted twice).', payDayT: 'Payments today',
-    payNoneDay: 'No payment yet today.', sendWa: 'WhatsApp', owesAtDoor: '{n}: present - has NOT paid. Send him to the payments desk.', camOnP: 'Scan a card', inactive: 'deactivated',
+    payNoneDay: 'No payment yet today.', sendWa: 'WhatsApp', owesAtDoor: '{n}: present - has NOT paid. Take it now or send him to the payments desk.', payNowBtn: 'Pay now', payNeedFull: 'Accounts are on the Simple mode. The teacher must switch them to Full (Accounts tab) first.', hpBtn: 'How?', camOnP: 'Scan a card', inactive: 'deactivated',
     'err.AMOUNT_INVALID': 'Write the amount.',
     'err.API_URL': 'Paste the Examora link that ends in /exec.', 'err.NETWORK': 'No connection. Check the internet and try again.', 'err.AUTH_FAILED': 'Wrong email or PIN, or the account is locked for a while.',
     'err.SESSION_EXPIRED': 'You were signed out. Sign in again.', 'err.FORBIDDEN': 'You do not have this permission (attendance / payments).', 'err.BUSY': 'The server is busy. Try again in a moment.',
@@ -143,7 +146,7 @@ var I18N = {
     payPaid: 'دافع. مفيش عليه حاجة.', payAhead: 'دافع مقدّم: {n} جنيه', payDue: 'عليه: {n} جنيه', payLast: 'آخر شهر دفعه: من {d}', payNone: 'لسه ما دفعش حاجة.', payToday: 'دفع النهارده: {n}',
     payMonth: 'شهر من \u2066{d}\u2069 - {s} حصص{a}', payAbs: '، خصم غياب {n}', paySession: 'حصة {d}', payCharge: 'رسوم {d}', payLeft: 'باقي {n}', perSession: 'بيدفع بالحصة', freeStudent: 'مجاني',
     payAmount: 'المبلغ اللي استلمته (كاش)', payOk: 'تأكيد', payCancel: 'إلغاء', paySaved: '{n}: اتسجل {a} جنيه.', payAgain: 'اتسجلت من ثواني (مش هتتحسب مرتين).', payDayT: 'مدفوعات النهارده',
-    payNoneDay: 'لسه مفيش دفع النهارده.', sendWa: 'واتساب', owesAtDoor: '{n}: حاضر - مش دافع. ابعته لمكتب الدفع.', camOnP: 'امسح كارت', inactive: 'متوقف',
+    payNoneDay: 'لسه مفيش دفع النهارده.', sendWa: 'واتساب', owesAtDoor: '{n}: حاضر - مش دافع. خده دلوقتي أو ابعته لمكتب الدفع.', payNowBtn: 'دفع الآن', payNeedFull: 'الحسابات على النظام البسيط. لازم المدرس يغيرها لـ كامل من تبويب الحسابات الأول.', hpBtn: 'ازاي؟', camOnP: 'امسح كارت', inactive: 'متوقف',
     'err.AMOUNT_INVALID': 'اكتب المبلغ.',
     'err.API_URL': 'الصق لينك Examora اللي آخره /exec.', 'err.NETWORK': 'مفيش اتصال. اتأكد من النت وجرب تاني.', 'err.AUTH_FAILED': 'الإيميل أو الرقم السري غلط، أو الحساب مقفول شوية.',
     'err.SESSION_EXPIRED': 'خرجت من الحساب. ادخل تاني.', 'err.FORBIDDEN': 'معندكش الصلاحية دي (الحضور / الدفع).', 'err.BUSY': 'السيرفر مشغول. جرب كمان شوية.',
@@ -206,7 +209,7 @@ function resume() {
   return RESUMING;
 }
 
-function show(v) { ['vLogin', 'vToday', 'vClass', 'vPay'].forEach(function (x) { $(x).classList.toggle('hide', x !== v); }); $('outBtn').classList.toggle('hide', v === 'vLogin'); if (v === 'vLogin') $('tabs').classList.add('hide'); stopCam(); }
+function show(v) { ['vLogin', 'vToday', 'vClass', 'vPay'].forEach(function (x) { $(x).classList.toggle('hide', x !== v); }); $('hpRow').classList.toggle('hide', v === 'vLogin'); $('hpBox').classList.add('hide'); if (v !== 'vClass' && $('doorPay')) $('doorPay').classList.add('hide'); $('outBtn').classList.toggle('hide', v === 'vLogin'); if (v === 'vLogin') $('tabs').classList.add('hide'); stopCam(); }
 function apiUi() { var known = API_RE.test(API); $('apiW').classList.toggle('hide', known); $('apiKnown').classList.toggle('hide', !known); }
 $('apiChange').addEventListener('click', function () { API = ''; $('api').value = ''; apiUi(); });
 function signedOut(msg) { TOKEN = null; sput('exs_tok', null); CUR = null; show('vLogin'); say('loginMsg', msg || '', msg ? 'err' : ''); $('pin').value = ''; }
@@ -228,9 +231,9 @@ function loadToday() {
   show('vToday'); say('todayMsg', t('loading'));
   api('today', {}).then(function (r) {
     if (!r.ok) { say('todayMsg', errText(r), 'err'); return; }
-    CAN = { att: r.data.canAttend !== false, pay: r.data.canPay === true };   // P9.54
+    CAN = { att: r.data.canAttend !== false, pay: r.data.canPay === true && r.data.financeFull !== false };   // P9.54; owner 2026-11-13: payments only in the FULL accounts mode
     $('tabs').classList.toggle('hide', !(CAN.att && CAN.pay)); tabsUi();
-    if (!CAN.att) { openPay(); return; }
+    if (!CAN.att) { if (CAN.pay) openPay(); else say('todayMsg', t('payNeedFull'), 'err'); return; }
     say('todayMsg', ''); $('todayDate').textContent = r.data.date;
     var box = $('clsList'); box.textContent = '';
     if (!r.data.classes.length) box.appendChild(el('p', { cls: 'small', text: t('noClasses') }));
@@ -343,7 +346,7 @@ function send(job, fromQueue) {
     if (CUR && CUR.classId === d.cls.classId) CUR = d.cls;
     if (!fromQueue) { var msg = t(d.already ? 'already' : 'marked', { n: name, s: t('st.' + d.status) }), owes = d.student.pay === 'owes';   // P9.54: not paid -> tell the door
       if (owes) msg = t('owesAtDoor', { n: d.student.name });
-      banner(msg, owes || d.already ? 'warn' : 'ok'); flash(msg, owes || d.already ? 'warn' : 'ok'); beep(!d.already && !owes); }
+      banner(msg, owes || d.already ? 'warn' : 'ok'); flash(msg, owes || d.already ? 'warn' : 'ok'); beep(!d.already && !owes); doorPay(owes && CAN.pay ? d.student : null); }
     if (!d.already || !SCANS.some(function (x) { return x.studentId === d.student.studentId && x.classId === d.cls.classId; })) SCANS.unshift({ classId: d.cls.classId, studentId: d.student.studentId, name: name, status: d.status, at: Date.now() });
     if (job.how === 'search' && !fromQueue) $('q').value = '';
     if (CUR) renderClass();
@@ -425,6 +428,21 @@ function leavePay() { MODE = 'att'; tabsUi(); stopCam(); if (CAMHOME) CAMHOME.p.
 $('tabPay').addEventListener('click', function () { if (MODE !== 'pay') openPay(); });
 $('tabAtt').addEventListener('click', function () { if (MODE !== 'att') leavePay(); });
 $('pcamBtn').addEventListener('click', function () { if (CAM) stopCam(); else startCam(); });
+/** Owner 2026-11-13: a per-class student who owes can pay right at the door (amount = all he owes, may be changed). Not paid now = stays owed. */
+function doorPay(st) {
+  var box = $('doorPay'); box.textContent = ''; box.classList.toggle('hide', !st || !st.owes); if (!st || !st.owes) return;
+  var amt = el('input', { type: 'number', min: '0', step: '1', dir: 'ltr', style: 'max-width:110px' }), msg = el('div', { cls: 'msg', role: 'status' }); amt.value = String(st.owes);
+  var go = el('button', { cls: 'sm pri', text: t('payNowBtn'), onclick: function () {
+    if (!(Number(amt.value) > 0)) { msg.textContent = t('err.AMOUNT_INVALID'); msg.className = 'msg err'; return; }
+    go.disabled = true;
+    api('pay', { studentId: st.studentId, amount: Number(amt.value) }).then(function (r) {
+      go.disabled = false; if (!r.ok) { msg.textContent = errText(r); msg.className = 'msg err'; beep(false); return; }
+      beep(true); box.textContent = ''; box.appendChild(el('div', { cls: 'msg ok', text: t('paySaved', { n: st.name, a: r.data.amount }) }));
+      if (CUR) api('getClass', { classId: CUR.classId }).then(function (c) { if (c.ok && CUR && c.data.classId === CUR.classId) { CUR = c.data; renderClass(); } });
+    });
+  } });
+  box.appendChild(el('div', { cls: 'row' }, [el('span', { cls: 'small sp', text: t('owesN', { n: st.owes }) }), amt, go])); box.appendChild(msg);
+}
 function payLookup(code) {
   say('pcamMsg', t('loading'));
   api('payInfo', { code: code }).then(function (r) { if (!r.ok) { say('pcamMsg', errText(r), 'err'); beep(false); return; } say('pcamMsg', ''); beep(true); renderPay(r.data, ''); });
@@ -507,6 +525,14 @@ $('pdRef').addEventListener('click', loadPayDay);
   start();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
 })();
+
+// owner 2026-11-13: «ازاي؟» help for the open screen (Arabic + English)
+var HELP = {"vToday": [["اختار حصة النهارده عشان تاخد الحضور.", "Pick one of today's classes to take attendance."], ["«الدفع» فوق: شاشة تحصيل الفلوس.", "\"Payments\" at the top: the money screen."]], "vClass": [["شغّل الكاميرا وامسح كارت الطالب، أو دوّر باسمه.", "Turn on the camera and scan the card, or search the name."], ["لو عليه فلوس يظهر المبلغ و«دفع الآن». لو ما دفعش بيفضل عليه متأخر.", "If he owes, the amount and \"Pay now\" show. Not paid = stays owed."], ["من غير نت؟ المسح بيتحفظ ويتبعت لوحده لما النت يرجع.", "No signal? Scans wait and are sent when it is back."]], "vPay": [["امسح الكارت أو دوّر بالاسم.", "Scan the card or search the name."], ["يظهر إجمالي المتأخر بالتفصيل: الحصص بتواريخها أو الشهور.", "The total owed shows with details: classes by date, or months."], ["اكتب المبلغ (كله أو جزء) ودوس تأكيد، وابعت الإيصال واتساب.", "Type the amount (all or part), confirm, and send the WhatsApp receipt."], ["تحت: كل مدفوعات النهارده وإجماليها.", "Below: all of today's payments and their total."]]};
+$('hpBtn').addEventListener('click', function () {
+  var v = ['vPay', 'vClass', 'vToday'].filter(function (x) { return !$(x).classList.contains('hide'); })[0] || 'vToday', L = LANG === 'ar' ? 0 : 1, box = $('hpBody'); box.textContent = '';
+  var ol = el('ol', { style: 'padding-inline-start:20px;margin:0' }); HELP[v].forEach(function (x) { ol.appendChild(el('li', { style: 'margin:6px 0', text: x[L] })); }); box.appendChild(ol);
+  $('hpBox').classList.toggle('hide');
+});
 </script>
 </body>
 </html>
