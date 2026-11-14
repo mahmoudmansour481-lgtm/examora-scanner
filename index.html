@@ -231,6 +231,7 @@ function loadToday() {
   show('vToday'); say('todayMsg', t('loading'));
   api('today', {}).then(function (r) {
     if (!r.ok) { say('todayMsg', errText(r), 'err'); return; }
+    SIGN = r.data.sign || null;
     CAN = { att: r.data.canAttend !== false, pay: r.data.canPay === true && r.data.financeFull !== false };   // P9.54; owner 2026-11-13: payments only in the FULL accounts mode
     $('tabs').classList.toggle('hide', !(CAN.att && CAN.pay)); tabsUi();
     if (!CAN.att) { if (CAN.pay) openPay(); else say('todayMsg', t('payNeedFull'), 'err'); return; }
@@ -484,7 +485,11 @@ $('pq').addEventListener('keydown', function (e) {
   });
 });
 function coverText(cv) { var ar = LANG === 'ar'; return (cv || []).map(function (c) { return (c.type === 'Month' ? (ar ? 'شهر من ' : 'month from ') : c.type === 'Session' ? (ar ? 'حصة ' : 'class ') : (ar ? 'رسوم ' : 'charge ')) + c.label + (c.full ? '' : (ar ? ' (جزء)' : ' (part)')); }).join(ar ? '، ' : ', '); }
-function waMsg(x) {
+var SIGN = null;
+/** P9.93 owner 2026-11-14: the message starts with the teacher's name and subject. */
+function signed(ar, text) { if (!SIGN || !SIGN.name) return text; return (ar ? 'من: ' + SIGN.name + (SIGN.subject ? ' - مادة ' + SIGN.subject : '') : 'From: ' + SIGN.name + (SIGN.subject ? ' - ' + SIGN.subject : '')) + '\n' + text; }
+function waMsg(x) { var ar = x.language !== 'en'; return signed(ar, waMsg0(x)); }
+function waMsg0(x) {
   var ar = x.language !== 'en', d = String(x.at).slice(0, 10), cv = (x.covers || []).map(function (c) { return (c.type === 'Month' ? (ar ? 'شهر من ' : 'month from ') : c.type === 'Session' ? (ar ? 'حصة ' : 'class ') : (ar ? 'رسوم ' : 'charge ')) + c.label + (c.full ? '' : (ar ? ' (جزء)' : ' (part)')); }).join(ar ? '، ' : ', ');
   return ar ? 'تم استلام ' + x.amount + ' جنيه من الطالب/ة ' + x.name + ' بتاريخ ' + d + (cv ? ' عن: ' + cv : '') + '.' + (x.balance > 0 ? ' المتبقي: ' + x.balance + ' جنيه.' : '') + ' شكرا.'
     : 'Received ' + x.amount + ' EGP for ' + x.name + ' on ' + d + (cv ? ' for: ' + cv : '') + '.' + (x.balance > 0 ? ' Remaining: ' + x.balance + ' EGP.' : '') + ' Thank you.';
@@ -527,7 +532,7 @@ $('pdRef').addEventListener('click', loadPayDay);
 })();
 
 // owner 2026-11-13: «ازاي؟» help for the open screen (Arabic + English)
-var HELP = {"vToday": [["اختار حصة النهارده عشان تاخد الحضور.", "Pick one of today's classes to take attendance."], ["«الدفع» فوق: شاشة تحصيل الفلوس.", "\"Payments\" at the top: the money screen."]], "vClass": [["شغّل الكاميرا وامسح كارت الطالب، أو دوّر باسمه.", "Turn on the camera and scan the card, or search the name."], ["لو عليه فلوس يظهر المبلغ و«دفع الآن». لو ما دفعش بيفضل عليه متأخر.", "If he owes, the amount and \"Pay now\" show. Not paid = stays owed."], ["من غير نت؟ المسح بيتحفظ ويتبعت لوحده لما النت يرجع.", "No signal? Scans wait and are sent when it is back."]], "vPay": [["امسح الكارت أو دوّر بالاسم.", "Scan the card or search the name."], ["يظهر إجمالي المتأخر بالتفصيل: الحصص بتواريخها أو الشهور.", "The total owed shows with details: classes by date, or months."], ["اكتب المبلغ (كله أو جزء) ودوس تأكيد، وابعت الإيصال واتساب.", "Type the amount (all or part), confirm, and send the WhatsApp receipt."], ["تحت: كل مدفوعات النهارده وإجماليها.", "Below: all of today's payments and their total."]]};
+var HELP = {"vToday": [["اختار حصة النهارده عشان تاخد الحضور.", "Pick one of today's classes to take attendance."], ["«الدفع» فوق: شاشة تحصيل الفلوس.", "\"Payments\" at the top: the money screen."]], "vClass": [["شغّل الكاميرا وامسح كارت الطالب، أو دوّر باسمه.", "Turn on the camera and scan the card, or search the name."], ["لو عليه فلوس يظهر المبلغ و«دفع الآن». لو ما دفعش بيفضل عليه متأخر.", "If he owes, the amount and \"Pay now\" show. Not paid = stays owed."], ["من غير نت؟ المسح بيتحفظ ويتبعت لوحده لما النت يرجع.", "No signal? Scans wait and are sent when it is back."]], "vPay": [["امسح الكارت أو دوّر بالاسم.", "Scan the card or search the name."], ["يظهر إجمالي المتأخر بالتفصيل: الحصص بتواريخها أو الشهور.", "The total owed shows with details: classes by date, or months."], ["اكتب المبلغ (كله أو جزء) ودوس تأكيد، وابعت الإيصال واتساب.", "Type the amount (all or part), confirm, and send the WhatsApp receipt."], ["تحت: كل مدفوعات النهارده وإجماليها.", "Below: all of today's payments and their total."], ["رسالة الواتساب لولي الأمر بتبدأ باسم المدرس والمادة لوحدها.", "The WhatsApp message to the parent starts with the teacher's name and subject by itself."]]};
 $('hpBtn').addEventListener('click', function () {
   var v = ['vPay', 'vClass', 'vToday'].filter(function (x) { return !$(x).classList.contains('hide'); })[0] || 'vToday', L = LANG === 'ar' ? 0 : 1, box = $('hpBody'); box.textContent = '';
   var ol = el('ol', { style: 'padding-inline-start:20px;margin:0' }); HELP[v].forEach(function (x) { ol.appendChild(el('li', { style: 'margin:6px 0', text: x[L] })); }); box.appendChild(ol);
